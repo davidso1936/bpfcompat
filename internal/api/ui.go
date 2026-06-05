@@ -68,7 +68,7 @@ const uiHTML = `<!doctype html>
     }
     .workflow-steps {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(5, minmax(0, 1fr));
       gap: 6px;
     }
     .workflow-step {
@@ -79,6 +79,21 @@ const uiHTML = `<!doctype html>
       font-size: 12px;
       color: #d8e2f4;
       text-align: center;
+    }
+    .step-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .step-title strong {
+      font-size: 13px;
+      color: #edf1f8;
+    }
+    .step-title span {
+      color: #95a3bc;
+      font-size: 11px;
     }
     label { display: block; font-size: 12px; color: #b5bfd1; margin: 8px 0 6px; }
     input, select, textarea, button {
@@ -100,7 +115,34 @@ const uiHTML = `<!doctype html>
       font-weight: 600;
     }
     button.secondary { background: #1c2431; border-color: #3b4557; }
+    button.secondary.active {
+      background: #17335f;
+      border-color: #4d78bd;
+      color: #e8f0ff;
+    }
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+    }
     .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .segmented {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .target-presets {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .quad-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 8px;
+    }
     .profiles { max-height: 220px; overflow: auto; border: 1px solid #2f3748; border-radius: 6px; padding: 8px; }
     .profile-header {
       display: grid;
@@ -129,6 +171,27 @@ const uiHTML = `<!doctype html>
       color: #9fd5a7;
     }
     .status.error { color: #f2a3a3; }
+    .verdict-bar {
+      border: 1px solid #334057;
+      border-radius: 8px;
+      background: #111722;
+      padding: 12px;
+      display: grid;
+      gap: 4px;
+    }
+    .verdict-bar.pass { border-color: #2f7b58; background: #102119; }
+    .verdict-bar.fail, .verdict-bar.error { border-color: #8b4a4a; background: #241516; }
+    .verdict-bar.running { border-color: #3863ab; background: #111d31; }
+    .verdict-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #edf1f8;
+    }
+    .verdict-meta {
+      font-size: 12px;
+      color: #b8c5da;
+      line-height: 1.4;
+    }
     .hint {
       margin-top: 8px;
       font-size: 12px;
@@ -189,6 +252,158 @@ const uiHTML = `<!doctype html>
     .progress-pill.running { border-color: #3863ab; color: #9fc1ff; }
     .progress-pill.pass { border-color: #2f7b58; color: #94d7b0; }
     .progress-pill.fail, .progress-pill.infra_error { border-color: #8b4a4a; color: #f3b1b1; }
+    .intent-options {
+      display: grid;
+      gap: 8px;
+    }
+    .intent-card {
+      border: 1px solid #334057;
+      border-radius: 6px;
+      background: #101723;
+      padding: 9px 10px;
+      display: grid;
+      grid-template-columns: 18px 1fr;
+      gap: 8px;
+      align-items: start;
+      margin: 0;
+    }
+    .intent-card.active {
+      border-color: #4d78bd;
+      background: #13223a;
+    }
+    .intent-card.disabled {
+      opacity: 0.6;
+    }
+    .intent-card input {
+      width: 14px;
+      height: 14px;
+      margin: 1px 0 0;
+    }
+    .intent-label strong {
+      display: block;
+      font-size: 13px;
+      color: #edf1f8;
+    }
+    .intent-label span {
+      display: block;
+      font-size: 12px;
+      color: #aebbd0;
+      line-height: 1.35;
+      margin-top: 2px;
+    }
+    .matrix-wrap {
+      overflow: auto;
+      border: 1px solid #2f3748;
+      border-radius: 6px;
+    }
+    .matrix-wrap table {
+      min-width: 760px;
+    }
+    .matrix-counts {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .matrix-count {
+      border: 1px solid #2f3748;
+      border-radius: 6px;
+      background: #101723;
+      padding: 8px;
+      display: grid;
+      gap: 2px;
+      min-width: 0;
+    }
+    .matrix-count strong {
+      font-size: 16px;
+      color: #edf1f8;
+    }
+    .matrix-count span {
+      font-size: 11px;
+      color: #aebbd0;
+    }
+    .matrix-count.pass { border-color: #2f7b58; background: #102119; }
+    .matrix-count.fail, .matrix-count.error { border-color: #8b4a4a; background: #241516; }
+    .matrix-count.check { border-color: #856b2c; background: #221d11; }
+    .matrix-required-fail td {
+      background: rgba(139, 74, 74, 0.16);
+    }
+    .matrix-row-pass td:first-child {
+      border-left: 3px solid #2f7b58;
+    }
+    .matrix-row-fail td:first-child,
+    .matrix-row-error td:first-child,
+    .matrix-row-infra_error td:first-child {
+      border-left: 3px solid #8b4a4a;
+    }
+    .matrix-status-pill {
+      display: inline-block;
+      min-width: 66px;
+      border: 1px solid #3b4557;
+      border-radius: 999px;
+      padding: 2px 8px;
+      text-align: center;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0;
+    }
+    .matrix-status-pill.pass {
+      border-color: #2f7b58;
+      background: #102119;
+      color: #8fe0ab;
+    }
+    .matrix-status-pill.fail,
+    .matrix-status-pill.error,
+    .matrix-status-pill.infra_error {
+      border-color: #8b4a4a;
+      background: #241516;
+      color: #f1a0a0;
+    }
+    .matrix-status-pill.running {
+      border-color: #3863ab;
+      background: #111d31;
+      color: #9fc1ff;
+    }
+    .ci-mode-panel {
+      border: 1px solid #334057;
+      border-radius: 6px;
+      background: #101723;
+      padding: 10px;
+      display: grid;
+      gap: 7px;
+      margin-bottom: 10px;
+    }
+    .ci-mode-panel strong {
+      font-size: 13px;
+      color: #edf1f8;
+    }
+    .ci-mode-panel p {
+      margin: 0;
+      color: #b8c5da;
+      font-size: 12px;
+      line-height: 1.35;
+    }
+    .ci-mode-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .target-warning {
+      color: #f3c777;
+      margin-top: 2px;
+    }
+    .suite-preview {
+      border: 1px solid #2f3748;
+      border-radius: 6px;
+      background: #0f131b;
+      padding: 8px;
+      margin-top: 8px;
+      display: grid;
+      gap: 8px;
+    }
+    .suite-preview table {
+      margin-top: 2px;
+    }
     table {
       border-collapse: collapse;
       width: 100%;
@@ -295,29 +510,176 @@ const uiHTML = `<!doctype html>
     .mt10 { margin-top: 10px; }
     .inline-checkbox { width: auto; margin-right: 6px; }
     .clickable-row { cursor: pointer; }
+    @media (max-width: 980px) {
+      .layout {
+        grid-template-columns: 1fr;
+        height: auto;
+        min-height: calc(100vh - 44px);
+      }
+      .panel {
+        overflow: visible;
+      }
+      .results {
+        height: auto;
+        grid-template-rows: auto;
+      }
+      .workflow-steps {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .matrix-counts {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .runtime-steps,
+      .runtime-modes {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      }
+    }
+    @media (max-width: 560px) {
+      .preview-banner {
+        padding: 8px 10px;
+      }
+      .layout {
+        padding: 8px;
+        gap: 8px;
+      }
+      .section {
+        padding: 10px;
+      }
+      .workflow-steps,
+      .row,
+      .segmented,
+      .target-presets,
+      .quad-actions,
+      .matrix-counts,
+      .runtime-steps,
+      .runtime-modes,
+      .split-actions {
+        grid-template-columns: 1fr !important;
+      }
+      .step-title {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 3px;
+      }
+      .matrix-wrap table {
+        min-width: 620px;
+      }
+      .verdict-title {
+        font-size: 15px;
+      }
+    }
   </style>
 </head>
 <body>
   <div class="preview-banner">Technical Preview — CI-first eBPF compatibility gate. Select target kernels, run validation, inspect drill-down evidence. Not for production runtime loading.</div>
   <div class="layout">
     <div class="panel">
-      <h2>BPF Compatibility Gate</h2>
+      <h2>Compatibility Run Builder</h2>
       <div class="section workflow-strip">
         <div class="workflow-steps">
           <div class="workflow-step">1. Select targets</div>
           <div class="workflow-step">2. Provide BPF</div>
-          <div class="workflow-step">3. Run validation</div>
-          <div class="workflow-step">4. Pass/fail matrix</div>
+          <div class="workflow-step">3. Test intent</div>
+          <div class="workflow-step">4. Run</div>
+          <div class="workflow-step">5. Matrix</div>
         </div>
-        <div class="hint">For BPF object collections, use the GitHub Action suite mode. This web demo validates one object or source file at a time.</div>
+        <div class="hint">Built for the CI workflow Samy and Falco both pointed at: choose kernels, provide BPF objects, run the gate, inspect failures only when needed.</div>
       </div>
+
       <div class="section">
-        <label>Artifact Name</label>
-        <input id="artifactName" placeholder="execsnoop">
+        <div class="step-title">
+          <strong>1. Select Targets</strong>
+          <span>kernel/distro matrix</span>
+        </div>
+        <div class="target-presets" id="targetPresets">
+          <button type="button" class="secondary" data-preset="enterprise-broad">Enterprise Broad</button>
+          <button type="button" class="secondary" data-preset="ubuntu-lts">Ubuntu LTS</button>
+          <button type="button" class="secondary" data-preset="rhel-like">RHEL-like</button>
+          <button type="button" class="secondary" data-preset="aws">AWS</button>
+          <button type="button" class="secondary" data-preset="custom">Custom</button>
+        </div>
+        <div id="targetPresetHint" class="hint">Loading target catalog...</div>
+        <div class="profile-header">
+          <span>Run</span>
+          <span>Kernel / distro profile</span>
+          <span>Required</span>
+        </div>
+        <div id="profiles" class="profiles"></div>
+        <div class="quad-actions">
+          <button type="button" class="secondary" id="selectAll">Select All</button>
+          <button type="button" class="secondary" id="clearAll">Clear All</button>
+          <button type="button" class="secondary" id="requireSelected">Require Selected</button>
+          <button type="button" class="secondary" id="clearRequired">Clear Required</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="step-title">
+          <strong>2. Provide BPF</strong>
+          <span>object or collection</span>
+        </div>
+        <div class="segmented">
+          <button type="button" class="secondary active" id="modeSingle">Single Object</button>
+          <button type="button" class="secondary" id="modeSuite">Collection / Suite</button>
+        </div>
+
+        <div id="singleInputMode">
+          <label>Artifact Name</label>
+          <input id="artifactName" placeholder="execsnoop">
+          <label>BPF Input</label>
+          <div class="row">
+            <button type="button" class="secondary active" id="modeArtifact">Upload .bpf.o</button>
+            <button type="button" class="secondary" id="modeSource">Compile Source</button>
+          </div>
+          <div id="artifactMode">
+            <label>Artifact File</label>
+            <input id="artifactFile" type="file">
+          </div>
+          <div id="sourceMode" class="hidden">
+            <label>Source File</label>
+            <input id="sourceFile" type="file">
+            <label>Paste Source Code</label>
+            <textarea id="sourceCode" placeholder="Paste .bpf.c source"></textarea>
+            <label>Clang Flags (optional)</label>
+            <input id="clangFlags" placeholder="-DDEBUG=1">
+          </div>
+        </div>
+
+        <div id="suiteInputMode" class="hidden">
+          <div class="ci-mode-panel">
+            <strong>CI mode</strong>
+            <p>Collections are designed to run in GitHub Actions on a self-hosted Linux/KVM runner. The suite lists BPF objects, manifests, and target policy; the output is a pass/fail matrix plus a detailed job summary.</p>
+            <div class="ci-mode-pills">
+              <span class="badge">suite YAML</span>
+              <span class="badge">self-hosted KVM</span>
+              <span class="badge">GitHub summary</span>
+            </div>
+          </div>
+          <label>Suite YAML File</label>
+          <input id="suiteFile" type="file" accept=".yaml,.yml,text/yaml">
+          <label>or Paste Suite YAML</label>
+          <textarea id="suiteText" placeholder="name: my-bpf-suite
+defaults:
+  matrix: matrices/dev-one.yaml
+cases:
+  - name: exec-tracepoint
+    artifact: build/exec_tracepoint.bpf.o
+    manifest: manifests/exec_tracepoint.yaml
+  - name: network-xdp
+    artifact: build/network_xdp.bpf.o"></textarea>
+          <label>Suite Path in CI</label>
+          <input id="suitePath" value="suites/project.yaml">
+          <div id="suitePreview" class="suite-preview">
+            <div class="hint">Paste a suite YAML to preview collection cases and generate GitHub Action configuration.</div>
+          </div>
+          <label>GitHub Action Preview</label>
+          <pre id="suiteActionYaml" class="mono">Paste a suite YAML to generate a CI snippet.</pre>
+          <button type="button" class="secondary mt8" id="copyActionYaml">Copy GitHub Action YAML</button>
+        </div>
       </div>
 
       <details class="advanced-settings">
-        <summary>Advanced artifact metadata</summary>
+        <summary>Advanced single-object metadata</summary>
         <div class="section">
           <div class="row">
             <div>
@@ -335,23 +697,34 @@ const uiHTML = `<!doctype html>
       </details>
 
       <div class="section">
-        <label>BPF Input</label>
-        <div class="row">
-          <button type="button" class="secondary" id="modeArtifact">Upload .bpf.o</button>
-          <button type="button" class="secondary" id="modeSource">Compile Source</button>
+        <div class="step-title">
+          <strong>3. Test Intent</strong>
+          <span>what the gate proves</span>
         </div>
-        <div id="artifactMode">
-          <label>Artifact File</label>
-          <input id="artifactFile" type="file">
+        <div class="intent-options">
+          <label class="intent-card active" id="intentLoadAttach">
+            <input type="radio" name="testIntent" value="load_attach" checked>
+            <span class="intent-label">
+              <strong>Load + attach</strong>
+              <span>Default web path: libbpf load plus best-effort attach evidence.</span>
+            </span>
+          </label>
+          <label class="intent-card disabled" id="intentLoadOnly">
+            <input type="radio" name="testIntent" value="load_only" disabled>
+            <span class="intent-label">
+              <strong>Load only</strong>
+              <span>Available in lower-level validator/agent flows, not exposed by this web gate yet.</span>
+            </span>
+          </label>
+          <label class="intent-card disabled" id="intentBehavior">
+            <input type="radio" name="testIntent" value="behavior" disabled>
+            <span class="intent-label">
+              <strong>Load + attach + behavior command</strong>
+              <span>Use suite mode in CI when a collection needs Falco-style event or smoke-test assertions.</span>
+            </span>
+          </label>
         </div>
-        <div id="sourceMode" class="hidden">
-          <label>Source File</label>
-          <input id="sourceFile" type="file">
-          <label>Paste Source Code</label>
-          <textarea id="sourceCode" placeholder="Paste .bpf.c source"></textarea>
-          <label>Clang Flags (optional)</label>
-          <input id="clangFlags" placeholder="-I./include -DDEBUG=1">
-        </div>
+        <div id="testIntentHint" class="hint">This web gate currently proves load and attach compatibility. Behavior assertions belong in suite manifests and CI.</div>
       </div>
 
       <details class="advanced-settings">
@@ -383,27 +756,22 @@ programs:
       </details>
 
       <div class="section">
-        <label>Target Kernels</label>
-        <div class="profile-header">
-          <span>Run</span>
-          <span>Kernel / distro profile</span>
-          <span>Required</span>
+        <div class="step-title">
+          <strong>4. Run</strong>
+          <span>gate selected targets</span>
         </div>
-        <div id="profiles" class="profiles"></div>
-        <div class="split-actions">
-          <button type="button" class="secondary" id="selectAll">Select All</button>
-          <button type="button" class="secondary" id="clearAll">Clear All</button>
-        </div>
-      </div>
-
-      <div class="section">
         <button id="runBtn">Run Compatibility Gate</button>
+        <div id="runHint" class="hint">Single-object mode runs directly here. Collection mode generates the recommended CI suite configuration.</div>
       </div>
     </div>
 
     <div class="panel">
-      <h2>Pass/Fail Matrix</h2>
+      <h2>Compatibility Matrix</h2>
       <div class="results">
+        <div id="verdictBar" class="verdict-bar neutral">
+          <div id="verdictTitle" class="verdict-title">No validation run yet</div>
+          <div id="verdictMeta" class="verdict-meta">Select targets, provide a BPF object, then run the gate.</div>
+        </div>
         <div id="status" class="status">Select target kernels and run validation.</div>
         <div class="progress-wrap">
           <div class="progress-track"><div id="progressFill" class="progress-fill"></div></div>
@@ -416,8 +784,8 @@ programs:
           <pre id="resultJson" class="mono">{}</pre>
         </details>
 
-        <details class="result-drilldown">
-          <summary>Drill down: history, compare, and runtime decision proof</summary>
+        <details class="result-drilldown" id="evidenceDrilldown">
+          <summary>Advanced evidence and history</summary>
           <div class="section">
           <div class="row">
             <div>
@@ -580,12 +948,18 @@ programs:
 
   <script nonce="__CSP_NONCE__">
     let mode = "artifact";
-    const state = { profiles: [], history: [], decisions: [] };
+    let bpfInputMode = "single";
+    let selectedPreset = "ubuntu-lts";
+    const state = { profiles: [], history: [], decisions: [], suite: { name: "", cases: [] } };
     let apiConfig = null;
     let runInFlight = false;
+    let evidenceLoaded = false;
 
     const byId = (id) => document.getElementById(id);
     const statusEl = byId("status");
+    const verdictBarEl = byId("verdictBar");
+    const verdictTitleEl = byId("verdictTitle");
+    const verdictMetaEl = byId("verdictMeta");
     const resultJsonEl = byId("resultJson");
     const compareJsonEl = byId("compareJson");
     const decisionJsonEl = byId("decisionJson");
@@ -593,6 +967,12 @@ programs:
     const progressFillEl = byId("progressFill");
     const progressMetaEl = byId("progressMeta");
     const progressProfilesEl = byId("progressProfiles");
+    const runBtnEl = byId("runBtn");
+    const runHintEl = byId("runHint");
+    const targetPresetHintEl = byId("targetPresetHint");
+    const suitePreviewEl = byId("suitePreview");
+    const suiteActionYamlEl = byId("suiteActionYaml");
+    const evidenceDrilldownEl = byId("evidenceDrilldown");
     const writeAuthSectionEl = byId("writeAuthSection");
     const authHintEl = byId("authHint");
     const runtimeHintEl = byId("runtimeHint");
@@ -631,6 +1011,12 @@ programs:
     function setStatus(text, error = false) {
       statusEl.textContent = text;
       statusEl.className = error ? "status error" : "status";
+    }
+
+    function setVerdict(kind, title, meta) {
+      verdictBarEl.className = "verdict-bar " + (kind || "neutral");
+      verdictTitleEl.textContent = title || "No validation run yet";
+      verdictMetaEl.textContent = meta || "";
     }
 
     function setAuthHint(text, error = false) {
@@ -880,6 +1266,9 @@ programs:
         details.push(job.message);
       }
       progressMetaEl.textContent = percent + "%" + (details.length ? " • " + details.join(" • ") : "");
+      if (percent > 0 && percent < 100) {
+        setVerdict("running", "Running compatibility gate", progressMetaEl.textContent);
+      }
 
       progressProfilesEl.innerHTML = "";
       const statuses = (job && job.profile_statuses) || {};
@@ -1003,18 +1392,83 @@ programs:
       throw new Error(actionLabel + " is not open on this public demo.");
     }
 
+    function setButtonActive(id, active) {
+      const el = byId(id);
+      if (el) {
+        el.classList.toggle("active", !!active);
+      }
+    }
+
     function switchMode(nextMode) {
       mode = nextMode;
       byId("artifactMode").style.display = mode === "artifact" ? "block" : "none";
       byId("sourceMode").style.display = mode === "source" ? "block" : "none";
+      setButtonActive("modeArtifact", mode === "artifact");
+      setButtonActive("modeSource", mode === "source");
     }
 
+    function switchBPFInputMode(nextMode) {
+      bpfInputMode = nextMode;
+      byId("singleInputMode").style.display = bpfInputMode === "single" ? "block" : "none";
+      byId("suiteInputMode").style.display = bpfInputMode === "suite" ? "block" : "none";
+      setButtonActive("modeSingle", bpfInputMode === "single");
+      setButtonActive("modeSuite", bpfInputMode === "suite");
+      if (bpfInputMode === "suite") {
+        runBtnEl.textContent = "Generate CI Gate";
+        runHintEl.textContent = "Collection mode is CI-first. The browser previews the suite and generates the GitHub Action configuration.";
+        setStatus("Collection mode selected. Paste suite YAML to preview the BPF object set.");
+        setVerdict("neutral", "Collection preview mode", "Use the generated GitHub Action on a self-hosted Linux/KVM runner for real suite execution.");
+        updateSuitePreview();
+      } else {
+        runBtnEl.textContent = "Run Compatibility Gate";
+        runHintEl.textContent = "Single-object mode runs directly here. Collection mode generates the recommended CI suite configuration.";
+        setStatus("Single-object mode selected. Upload or compile one BPF object.");
+        setVerdict("neutral", "No validation run yet", "Select targets, provide a BPF object, then run the gate.");
+      }
+    }
+
+    byId("modeSingle").addEventListener("click", () => switchBPFInputMode("single"));
+    byId("modeSuite").addEventListener("click", () => switchBPFInputMode("suite"));
     byId("modeArtifact").addEventListener("click", () => switchMode("artifact"));
     byId("modeSource").addEventListener("click", () => switchMode("source"));
     runtimeModeButtons.probe.addEventListener("click", () => setRuntimeMode("probe"));
     runtimeModeButtons.select.addEventListener("click", () => setRuntimeMode("select"));
     runtimeModeButtons.fetch.addEventListener("click", () => setRuntimeMode("fetch"));
     runtimeModeButtons.execute.addEventListener("click", () => setRuntimeMode("execute"));
+
+    byId("suiteText").addEventListener("input", updateSuitePreview);
+    byId("suitePath").addEventListener("input", updateSuitePreview);
+    byId("suiteFile").addEventListener("change", () => {
+      const file = byId("suiteFile").files[0];
+      if (!file) {
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        byId("suiteText").value = String(reader.result || "");
+        updateSuitePreview();
+      };
+      reader.onerror = () => setStatus("Failed to read suite file", true);
+      reader.readAsText(file);
+    });
+    byId("copyActionYaml").addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(suiteActionYamlEl.textContent || "");
+        setStatus("GitHub Action YAML copied");
+      } catch (err) {
+        setStatus("Copy failed; select the generated YAML manually.", true);
+      }
+    });
+
+    document.querySelectorAll("input[name='testIntent']").forEach((input) => {
+      input.addEventListener("change", () => {
+        document.querySelectorAll(".intent-card").forEach((card) => card.classList.remove("active"));
+        const card = input.closest(".intent-card");
+        if (card) {
+          card.classList.add("active");
+        }
+      });
+    });
 
     function refreshAuthHintFromConfig() {
       if (!apiConfig) {
@@ -1078,26 +1532,17 @@ programs:
       title.appendChild(strong);
       const meta = document.createElement("div");
       meta.className = "meta";
-      meta.appendChild(document.createTextNode(
-        profile.distro + " " + profile.version + " kernel " + profile.kernel_family + " "
-      ));
-      const badge = document.createElement("span");
-      badge.className = "badge";
-      badge.textContent = profile.image_cached ? "image cached" : "image missing";
-      meta.appendChild(badge);
-      const sourceBadge = document.createElement("span");
-      sourceBadge.className = "badge";
-      sourceBadge.textContent = profile.source_mode === "url" ? "url source" : "manual image";
-      meta.appendChild(sourceBadge);
-      const transportBadge = document.createElement("span");
-      transportBadge.className = "badge";
-      transportBadge.textContent = profile.transport_supported ? "transport: " + (profile.transport || "ssh") : "transport unsupported";
-      meta.appendChild(transportBadge);
+      const profileParts = [];
+      if (profile.distro) profileParts.push(profile.distro);
+      if (profile.version) profileParts.push(profile.version);
+      if (profile.kernel_family) profileParts.push("kernel " + profile.kernel_family);
+      if (profile.arch) profileParts.push(profile.arch);
+      meta.textContent = profileParts.length > 0 ? profileParts.join(" • ") : "kernel target";
       label.append(title, meta);
-      if (!profile.transport_supported && profile.transport_note) {
+      if (!profile.transport_supported || profile.image_cached === false) {
         const reason = document.createElement("div");
-        reason.className = "meta";
-        reason.textContent = profile.transport_note;
+        reason.className = "meta target-warning";
+        reason.textContent = !profile.transport_supported ? (profile.transport_note || "Unavailable for this run") : "VM image not cached yet";
         label.appendChild(reason);
       }
 
@@ -1109,14 +1554,100 @@ programs:
       required.dataset.id = profile.id;
 
       include.addEventListener("change", () => {
+        selectedPreset = "custom";
+        syncTargetPresetButtons();
         required.disabled = !include.checked || !profile.transport_supported;
         if (required.disabled) {
           required.checked = false;
         }
+        updateTargetPresetHint();
+      });
+      required.addEventListener("change", () => {
+        selectedPreset = "custom";
+        syncTargetPresetButtons();
+        updateTargetPresetHint();
       });
 
       row.append(include, label, required);
       return row;
+    }
+
+    function syncTargetPresetButtons() {
+      document.querySelectorAll("button[data-preset]").forEach((btn) => {
+        btn.classList.toggle("active", btn.dataset.preset === selectedPreset);
+      });
+    }
+
+    function profileMatchesPreset(profile, preset) {
+      const id = String(profile.id || "").toLowerCase();
+      const distro = String(profile.distro || "").toLowerCase();
+      const version = String(profile.version || "").toLowerCase();
+      if (!profile.transport_supported) {
+        return false;
+      }
+      switch (preset) {
+        case "ubuntu-lts":
+          return distro === "ubuntu" && ["18.04", "20.04", "22.04", "24.04"].includes(version) && !id.includes("minimal");
+        case "rhel-like":
+          return ["rhel", "rocky", "almalinux", "centos", "centos-stream"].includes(distro);
+        case "aws":
+          return distro.includes("amazon") || id.includes("amazonlinux") || id.includes("bottlerocket");
+        case "enterprise-broad":
+          if (distro === "ubuntu") {
+            return ["20.04", "22.04", "24.04"].includes(version) && !id.includes("minimal");
+          }
+          if (distro === "debian") {
+            return ["12", "13"].includes(version);
+          }
+          if (["rhel", "rocky", "almalinux", "centos", "centos-stream"].includes(distro)) {
+            return ["8", "9", "10"].includes(version);
+          }
+          return ["oracle", "oraclelinux", "sles", "opensuse"].includes(distro) || distro.includes("amazon");
+        default:
+          return false;
+      }
+    }
+
+    function requiredForPreset(profile, preset, selectedCount) {
+      if (!profile.transport_supported) {
+        return false;
+      }
+      if (profile.required_default) {
+        return true;
+      }
+      return selectedCount <= 12;
+    }
+
+    function applyTargetPreset(preset) {
+      if (preset === "custom") {
+        selectedPreset = "custom";
+        syncTargetPresetButtons();
+        updateTargetPresetHint();
+        return;
+      }
+      selectedPreset = preset;
+      const selected = state.profiles.filter((profile) => profileMatchesPreset(profile, preset));
+      const selectedIDs = new Set(selected.map((profile) => profile.id));
+      document.querySelectorAll("input[data-kind='include']").forEach((input) => {
+        input.checked = selectedIDs.has(input.dataset.id);
+      });
+      document.querySelectorAll("input[data-kind='required']").forEach((input) => {
+        const profile = state.profiles.find((p) => p.id === input.dataset.id);
+        const include = selectedIDs.has(input.dataset.id);
+        input.disabled = !include || !profile || !profile.transport_supported;
+        input.checked = include && !!profile && requiredForPreset(profile, preset, selected.length);
+      });
+      syncTargetPresetButtons();
+      updateTargetPresetHint();
+    }
+
+    function updateTargetPresetHint() {
+      const picks = selectedProfiles();
+      const label = selectedPreset === "enterprise-broad" ? "Enterprise Broad" :
+        selectedPreset === "ubuntu-lts" ? "Ubuntu LTS" :
+        selectedPreset === "rhel-like" ? "RHEL-like" :
+        selectedPreset === "aws" ? "AWS" : "Custom";
+      targetPresetHintEl.textContent = label + ": " + picks.include.length + " target(s) selected, " + picks.required.length + " required for the gate.";
     }
 
     function appendCell(tr, value, className = "") {
@@ -1128,10 +1659,34 @@ programs:
       tr.appendChild(td);
     }
 
-    function summaryStatusClass(status) {
+    function normalizeStatus(status) {
       const normalized = String(status || "").trim().toLowerCase().replace(/[^a-z0-9_]+/g, "_");
-      if (!normalized) return "";
-      return "summary-cell-" + normalized;
+      return normalized || "unknown";
+    }
+
+    function appendStatusCell(tr, status) {
+      const td = document.createElement("td");
+      const normalized = normalizeStatus(status);
+      const pill = document.createElement("span");
+      pill.className = "matrix-status-pill " + normalized;
+      pill.textContent = String(status || "-").toUpperCase();
+      td.appendChild(pill);
+      tr.appendChild(td);
+    }
+
+    function appendMatrixCount(container, label, value, className = "") {
+      const item = document.createElement("div");
+      item.className = "matrix-count" + (className ? " " + className : "");
+      const strong = document.createElement("strong");
+      strong.textContent = String(value);
+      const span = document.createElement("span");
+      span.textContent = label;
+      item.append(strong, span);
+      container.appendChild(item);
+    }
+
+    function summaryStatusClass(status) {
+      return "summary-cell-" + normalizeStatus(status);
     }
 
     function formatProfileEnv(target) {
@@ -1162,6 +1717,116 @@ programs:
       return "failed";
     }
 
+    function cleanYAMLValue(raw) {
+      let value = String(raw || "").trim();
+      if ((value.startsWith("\"") && value.endsWith("\"")) || (value.startsWith("'") && value.endsWith("'"))) {
+        value = value.slice(1, -1);
+      }
+      return value.trim();
+    }
+
+    function parseSuitePreview(text) {
+      const suite = { name: "", cases: [] };
+      let current = null;
+      String(text || "").split(/\r?\n/).forEach((line) => {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith("#")) {
+          return;
+        }
+        let match = trimmed.match(/^name:\s*(.+)$/);
+        if (match && !current && !suite.name) {
+          suite.name = cleanYAMLValue(match[1]);
+          return;
+        }
+        match = line.match(/^\s*-\s+name:\s*(.+)$/);
+        if (match) {
+          current = { name: cleanYAMLValue(match[1]), artifact: "", manifest: "", artifactName: "" };
+          suite.cases.push(current);
+          return;
+        }
+        if (!current) {
+          return;
+        }
+        match = line.match(/^\s+(artifact|manifest|artifact_name):\s*(.+)$/);
+        if (!match) {
+          return;
+        }
+        const key = match[1];
+        const value = cleanYAMLValue(match[2]);
+        if (key === "artifact") {
+          current.artifact = value;
+        } else if (key === "manifest") {
+          current.manifest = value;
+        } else if (key === "artifact_name") {
+          current.artifactName = value;
+        }
+      });
+      return suite;
+    }
+
+    function generateSuiteActionYAML(suite) {
+      const suitePath = byId("suitePath").value.trim() || "suites/project.yaml";
+      const suiteName = suite && suite.name ? suite.name : "bpf-compatibility";
+      return [
+        "name: BPF compatibility",
+        "",
+        "on:",
+        "  pull_request:",
+        "  push:",
+        "    branches: [main]",
+        "",
+        "jobs:",
+        "  bpfcompat:",
+        "    name: " + suiteName,
+        "    runs-on: [self-hosted, linux, x64, kvm]",
+        "    steps:",
+        "      - uses: actions/checkout@v4",
+        "      - uses: Kernel-Guard/bpfcompat@v0.1.2",
+        "        with:",
+        "          suite: " + suitePath,
+        "          suite-out: reports/bpfcompat-suite.json",
+        "          suite-markdown: reports/bpfcompat-suite.md",
+        "          timeout: 8m",
+        "          concurrency: \"1\""
+      ].join("\n");
+    }
+
+    function updateSuitePreview() {
+      const suite = parseSuitePreview(byId("suiteText").value);
+      state.suite = suite;
+      suitePreviewEl.replaceChildren();
+      const title = document.createElement("div");
+      title.className = "hint";
+      if (suite.cases.length === 0) {
+        title.textContent = "No suite cases detected yet. Paste a suite YAML with cases[].name and cases[].artifact.";
+        suitePreviewEl.appendChild(title);
+      } else {
+        title.textContent = "Suite " + (suite.name || "unnamed") + ": " + suite.cases.length + " BPF object case(s).";
+        suitePreviewEl.appendChild(title);
+        const table = document.createElement("table");
+        const thead = document.createElement("thead");
+        const headRow = document.createElement("tr");
+        ["Case", "Artifact", "Manifest"].forEach((name) => {
+          const th = document.createElement("th");
+          th.textContent = name;
+          headRow.appendChild(th);
+        });
+        thead.appendChild(headRow);
+        table.appendChild(thead);
+        const tbody = document.createElement("tbody");
+        suite.cases.forEach((c) => {
+          const tr = document.createElement("tr");
+          appendCell(tr, c.artifactName || c.name || "-");
+          appendCell(tr, c.artifact || "-");
+          appendCell(tr, c.manifest || "-");
+          tbody.appendChild(tr);
+        });
+        table.appendChild(tbody);
+        suitePreviewEl.appendChild(table);
+      }
+      suiteActionYamlEl.textContent = generateSuiteActionYAML(suite);
+    }
+
     async function loadProfiles() {
       const data = await requestJSON("/api/profiles");
       state.profiles = data.profiles || [];
@@ -1169,6 +1834,7 @@ programs:
       const container = byId("profiles");
       container.innerHTML = "";
       state.profiles.forEach((p) => container.appendChild(createProfileRow(p)));
+      applyTargetPreset("ubuntu-lts");
     }
 
     function selectedProfiles() {
@@ -1186,14 +1852,34 @@ programs:
         container.replaceChildren();
         return;
       }
-      const headline = document.createElement("div");
       const summaryStatus = String(report.summary && report.summary.status || "unknown");
-      headline.className = summaryStatus.toLowerCase() === "pass" ? "status" : "status error";
       const targetCount = report.targets.length;
       const requiredFailed = report.targets.filter((t) => t.required && t.status !== "pass").length;
       const requiredPassed = report.targets.filter((t) => t.required && t.status === "pass").length;
+      const optionalFailed = report.targets.filter((t) => !t.required && t.status !== "pass").length;
+      const verdictKind = summaryStatus.toLowerCase() === "pass" ? "pass" : "fail";
+      let verdictTitle = "PASS: all required targets passed";
+      if (summaryStatus.toLowerCase() !== "pass" && requiredFailed > 0) {
+        verdictTitle = "FAIL: " + requiredFailed + " required target(s) failed";
+      } else if (summaryStatus.toLowerCase() !== "pass") {
+        verdictTitle = "CHECK: optional target failure(s) found";
+      }
+      const verdictMeta = targetCount + " target(s) checked. Required pass/fail: " + requiredPassed + "/" + requiredFailed + ". Optional failures: " + optionalFailed + ".";
+      setVerdict(verdictKind, verdictTitle, verdictMeta);
+
+      const headline = document.createElement("div");
+      headline.className = summaryStatus.toLowerCase() === "pass" ? "status" : "status error";
       headline.textContent = "Overall: " + summaryStatus + " • targets: " + targetCount + " • required pass/fail: " + requiredPassed + "/" + requiredFailed;
 
+      const counts = document.createElement("div");
+      counts.className = "matrix-counts";
+      appendMatrixCount(counts, "required passed", requiredPassed, "pass");
+      appendMatrixCount(counts, "required failed", requiredFailed, requiredFailed > 0 ? "fail" : "pass");
+      appendMatrixCount(counts, "optional failed", optionalFailed, optionalFailed > 0 ? "check" : "pass");
+      appendMatrixCount(counts, "targets checked", targetCount);
+
+      const wrap = document.createElement("div");
+      wrap.className = "matrix-wrap";
       const table = document.createElement("table");
       const thead = document.createElement("thead");
       const headRow = document.createElement("tr");
@@ -1206,26 +1892,75 @@ programs:
       table.appendChild(thead);
 
       const tbody = document.createElement("tbody");
-      report.targets.forEach((t) => {
+      const targets = Array.from(report.targets).sort((a, b) => {
+        const aRequiredFail = a.required && a.status !== "pass";
+        const bRequiredFail = b.required && b.status !== "pass";
+        if (aRequiredFail !== bRequiredFail) return aRequiredFail ? -1 : 1;
+        const aFail = a.status !== "pass";
+        const bFail = b.status !== "pass";
+        if (aFail !== bFail) return aFail ? -1 : 1;
+        return String(a.profile_id || "").localeCompare(String(b.profile_id || ""));
+      });
+      targets.forEach((t) => {
         const tr = document.createElement("tr");
+        tr.classList.add("matrix-row-" + normalizeStatus(t.status));
+        if (t.required && t.status !== "pass") {
+          tr.classList.add("matrix-required-fail");
+        }
         appendCell(tr, t.profile_id || "-");
         appendCell(tr, formatProfileEnv(t) + " • " + formatHostKernel(t));
-        appendCell(tr, t.status || "-", summaryStatusClass(t.status));
+        appendStatusCell(tr, t.status || "-");
         appendCell(tr, t.required ? "yes" : "optional");
         appendCell(tr, formatTargetReason(t));
         tbody.appendChild(tr);
       });
       table.appendChild(tbody);
-      container.replaceChildren(headline, table);
+      wrap.appendChild(table);
+      container.replaceChildren(headline, counts, wrap);
     }
 
+    document.querySelectorAll("button[data-preset]").forEach((btn) => {
+      btn.addEventListener("click", () => applyTargetPreset(btn.dataset.preset));
+    });
+
     byId("selectAll").addEventListener("click", () => {
+      selectedPreset = "custom";
+      syncTargetPresetButtons();
       document.querySelectorAll("input[data-kind='include']").forEach((x) => {
         x.checked = x.dataset.transportSupported === "true";
       });
+      document.querySelectorAll("input[data-kind='required']").forEach((x) => {
+        const include = document.querySelector("input[data-kind='include'][data-id='" + x.dataset.id + "']");
+        x.disabled = !include || !include.checked;
+      });
+      updateTargetPresetHint();
     });
     byId("clearAll").addEventListener("click", () => {
+      selectedPreset = "custom";
+      syncTargetPresetButtons();
       document.querySelectorAll("input[data-kind='include']").forEach((x) => (x.checked = false));
+      document.querySelectorAll("input[data-kind='required']").forEach((x) => {
+        x.checked = false;
+        x.disabled = true;
+      });
+      updateTargetPresetHint();
+    });
+    byId("requireSelected").addEventListener("click", () => {
+      selectedPreset = "custom";
+      syncTargetPresetButtons();
+      const picks = selectedProfiles();
+      document.querySelectorAll("input[data-kind='required']").forEach((x) => {
+        if (picks.include.includes(x.dataset.id) && !x.disabled) {
+          x.checked = true;
+        }
+      });
+      updateTargetPresetHint();
+    });
+    byId("clearRequired").addEventListener("click", () => {
+      selectedPreset = "custom";
+      syncTargetPresetButtons();
+      document.querySelectorAll("input[data-kind='required']").forEach((x) => (x.checked = false));
+      updateTargetPresetHint();
     });
 
     async function runValidationJob(fd) {
@@ -1276,12 +2011,24 @@ programs:
     }
 
     byId("runBtn").addEventListener("click", async () => {
+      if (bpfInputMode === "suite") {
+        updateSuitePreview();
+        const count = state.suite.cases.length;
+        if (count === 0) {
+          setStatus("Paste a suite YAML before generating a CI gate.", true);
+          setVerdict("error", "Suite YAML needs cases", "Add cases with name and artifact fields, then use the generated GitHub Action.");
+          return;
+        }
+        setStatus("Suite preview ready. Run this collection through the generated GitHub Action.");
+        setVerdict("neutral", "CI suite gate generated", count + " BPF object case(s) ready for self-hosted Linux/KVM execution.");
+        return;
+      }
       if (runInFlight) {
         setStatus("Validation already running. Please wait.");
         return;
       }
       runInFlight = true;
-      byId("runBtn").disabled = true;
+      runBtnEl.disabled = true;
       try {
         refreshAuthHintFromConfig();
         if (apiConfig && !apiConfig.allow_anonymous_write && !apiConfig.allow_anonymous_validate && !hasWriteCredentials()) {
@@ -1289,6 +2036,7 @@ programs:
         }
         resetProgress();
         setStatus("Starting validation...");
+        setVerdict("running", "Running compatibility gate", "Validating selected targets. Required failures will be shown first.");
         const fd = new FormData();
 
         fd.append("artifact_name", byId("artifactName").value.trim());
@@ -1333,12 +2081,19 @@ programs:
         setStatus("Completed. Exit code " + data.exit_code);
         resultJsonEl.textContent = JSON.stringify(data, null, 2);
         renderSummary(data.report);
-        await refreshHistory();
+        if (evidenceDrilldownEl.open) {
+          try {
+            await refreshHistory();
+          } catch (historyErr) {
+            compareJsonEl.textContent = JSON.stringify({ warning: String(historyErr) }, null, 2);
+          }
+        }
       } catch (err) {
         setStatus(String(err), true);
+        setVerdict("error", "Validation could not complete", String(err));
       } finally {
         runInFlight = false;
-        byId("runBtn").disabled = false;
+        runBtnEl.disabled = false;
       }
     });
 
@@ -1416,8 +2171,26 @@ programs:
       }
     }
 
+    async function loadEvidenceIfNeeded() {
+      if (!evidenceDrilldownEl.open || evidenceLoaded) {
+        return;
+      }
+      evidenceLoaded = true;
+      try {
+        await refreshHistory();
+      } catch (historyErr) {
+        compareJsonEl.textContent = JSON.stringify({ warning: String(historyErr) }, null, 2);
+      }
+      try {
+        await refreshDecisionHistory();
+      } catch (decisionErr) {
+        decisionJsonEl.textContent = JSON.stringify({ warning: String(decisionErr) }, null, 2);
+      }
+    }
+
     byId("refreshHistory").addEventListener("click", async () => {
       try {
+        evidenceLoaded = true;
         await refreshHistory();
         setStatus("History refreshed");
       } catch (err) {
@@ -1427,12 +2200,14 @@ programs:
 
     byId("refreshDecisions").addEventListener("click", async () => {
       try {
+        evidenceLoaded = true;
         await refreshDecisionHistory();
         setStatus("Runtime decisions refreshed");
       } catch (err) {
         setStatus(String(err), true);
       }
     });
+    evidenceDrilldownEl.addEventListener("toggle", loadEvidenceIfNeeded);
 
     byId("runCompare").addEventListener("click", async () => {
       try {
@@ -1596,8 +2371,9 @@ programs:
         resetProgress();
         await refreshAPIConfig();
         await loadProfiles();
-        await refreshHistory();
-        await refreshDecisionHistory();
+        updateSuitePreview();
+        switchMode("artifact");
+        switchBPFInputMode("single");
         setRuntimeMode("probe");
       } catch (err) {
         setStatus(String(err), true);

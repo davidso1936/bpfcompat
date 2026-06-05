@@ -382,8 +382,10 @@ oss-evidence: build validator-static
 
 serve: build validator-static
 	@echo "Web UI: http://127.0.0.1:8080"
-	@echo "Write API key: $${BPFCOMPAT_API_WRITE_KEY:-dev-write-key}"
-	BPFCOMPAT_API_WRITE_KEY="$${BPFCOMPAT_API_WRITE_KEY:-dev-write-key}" ./bin/bpfcompat serve --addr :8080 --workdir .bpfcompat --matrix matrices/mvp.yaml --concurrency 2 --timeout 8m
+	BPFCOMPAT_API_ALLOW_ANONYMOUS_VALIDATE="$${BPFCOMPAT_API_ALLOW_ANONYMOUS_VALIDATE:-true}" \
+	BPFCOMPAT_API_ALLOW_ANONYMOUS_READ="$${BPFCOMPAT_API_ALLOW_ANONYMOUS_READ:-true}" \
+	BPFCOMPAT_API_ALLOW_ANONYMOUS_RUNTIME_DELIVERY="$${BPFCOMPAT_API_ALLOW_ANONYMOUS_RUNTIME_DELIVERY:-true}" \
+	./bin/bpfcompat serve --addr :8080 --workdir .bpfcompat --matrix matrices/mvp.yaml --concurrency 2 --timeout 8m
 
 azure-provision-vm:
 	bash scripts/azure-provision-vm.sh

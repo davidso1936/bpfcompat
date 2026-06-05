@@ -11,23 +11,32 @@
 
 The web UI is intentionally optimized for the primary compatibility workflow:
 
-1. name the artifact,
-2. upload or compile one BPF object,
-3. select target kernels,
+1. select target kernels from presets or a custom matrix,
+2. upload or compile one BPF object, or preview a collection suite,
+3. choose the test intent,
 4. run the compatibility gate,
-5. read the pass/fail matrix first, then open drill-down evidence only when
+5. read the verdict and pass/fail matrix first, then open drill-down evidence only when
    needed.
 
+After a run, the first result panel shows a plain verdict, required/optional
+target counts, and a color-coded matrix. History, compare, and runtime
+decision proof stay behind the **Advanced evidence and history** drawer and are
+loaded only when that drawer is opened.
+
 For projects that ship collections of BPF objects/programs, use suite mode in
-the CLI or GitHub Action. The web UI remains a single-artifact demo and local
-inspection surface.
+the CLI or GitHub Action. The web UI previews suite cases, explains the
+recommended CI mode, and generates the GitHub Action YAML, but real collection
+execution remains CI-first.
 
 ## Start
 
 ```bash
 make build
 make validator-static
-BPFCOMPAT_API_WRITE_KEY=dev-write-key ./bin/bpfcompat serve --addr :8080 --workdir .bpfcompat --matrix matrices/mvp.yaml
+BPFCOMPAT_API_ALLOW_ANONYMOUS_VALIDATE=true \
+BPFCOMPAT_API_ALLOW_ANONYMOUS_READ=true \
+BPFCOMPAT_API_ALLOW_ANONYMOUS_RUNTIME_DELIVERY=true \
+  ./bin/bpfcompat serve --addr :8080 --workdir .bpfcompat --matrix matrices/mvp.yaml
 ```
 
 For local demos:
@@ -36,7 +45,9 @@ For local demos:
 make serve
 ```
 
-(`make serve` auto-sets `BPFCOMPAT_API_WRITE_KEY=dev-write-key` if unset.)
+(`make serve` starts the public-demo profile by default: validation, read-only
+history, and runtime select/fetch proof are available without a write key.
+Runtime execute remains hidden/disabled in the public UI.)
 
 Open:
 

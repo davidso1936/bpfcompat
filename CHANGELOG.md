@@ -7,6 +7,20 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) once a
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-06-05
+
+### Added — web UX and Marketplace
+- Main web UI now centers the Samy/Falco workflow: select targets, provide a
+  BPF object or suite, choose test intent, run the gate, then read a clear
+  pass/fail matrix before opening drill-down evidence.
+- Collection/suite mode explains the CI-first path and generates a GitHub
+  Action snippet for self-hosted Linux/KVM runners.
+- Compatibility results now show required/optional count tiles and
+  color-coded pass/fail status pills.
+- Advanced history, compare, and runtime decision proof is lazy-loaded only
+  when the advanced evidence drawer is opened.
+- Responsive CSS improves the main workflow on narrow/mobile screens.
+
 ### Added — security hardening (P0)
 - Added Apache-2.0 `LICENSE` and `SECURITY.md` disclosure policy.
 - HTTP server now sets `ReadHeaderTimeout`, `ReadTimeout`, `IdleTimeout`, and

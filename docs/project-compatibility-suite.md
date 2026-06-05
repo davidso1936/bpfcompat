@@ -67,7 +67,7 @@ Single-artifact mode remains supported. Suite mode is enabled by setting
 `suite`:
 
 ```yaml
-- uses: Kernel-Guard/bpfcompat@v0.1.1
+- uses: Kernel-Guard/bpfcompat@v0.1.2
   with:
     suite: suites/dev-functional.yaml
     suite-out: reports/bpfcompat-suite.json
