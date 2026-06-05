@@ -18,12 +18,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/erenari/bpfcompat/internal/agent"
-	"github.com/erenari/bpfcompat/internal/cloudregistry"
-	"github.com/erenari/bpfcompat/internal/manifest"
-	"github.com/erenari/bpfcompat/internal/registry"
-	"github.com/erenari/bpfcompat/internal/runner"
-	"github.com/erenari/bpfcompat/internal/runtime"
+	"github.com/kernel-guard/bpfcompat/internal/agent"
+	"github.com/kernel-guard/bpfcompat/internal/cloudregistry"
+	"github.com/kernel-guard/bpfcompat/internal/manifest"
+	"github.com/kernel-guard/bpfcompat/internal/registry"
+	"github.com/kernel-guard/bpfcompat/internal/runner"
+	"github.com/kernel-guard/bpfcompat/internal/runtime"
 )
 
 const (

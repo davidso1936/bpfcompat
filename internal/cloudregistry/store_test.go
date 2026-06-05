@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/erenari/bpfcompat/pkg/schema"
+	"github.com/kernel-guard/bpfcompat/pkg/schema"
 )
 
 func TestProjectLifecycleAndList(t *testing.T) {

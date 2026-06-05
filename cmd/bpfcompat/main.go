@@ -14,13 +14,13 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/erenari/bpfcompat/internal/api"
-	"github.com/erenari/bpfcompat/internal/compare"
-	"github.com/erenari/bpfcompat/internal/envref"
-	"github.com/erenari/bpfcompat/internal/registry"
-	"github.com/erenari/bpfcompat/internal/runner"
-	"github.com/erenari/bpfcompat/internal/runtime"
-	"github.com/erenari/bpfcompat/internal/version"
+	"github.com/kernel-guard/bpfcompat/internal/api"
+	"github.com/kernel-guard/bpfcompat/internal/compare"
+	"github.com/kernel-guard/bpfcompat/internal/envref"
+	"github.com/kernel-guard/bpfcompat/internal/registry"
+	"github.com/kernel-guard/bpfcompat/internal/runner"
+	"github.com/kernel-guard/bpfcompat/internal/runtime"
+	"github.com/kernel-guard/bpfcompat/internal/version"
 )
 
 func main() {

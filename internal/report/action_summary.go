@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/erenari/bpfcompat/pkg/schema"
+	"github.com/kernel-guard/bpfcompat/pkg/schema"
 )
 
 const (

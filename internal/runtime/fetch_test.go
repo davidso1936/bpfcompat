@@ -11,8 +11,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/erenari/bpfcompat/internal/artifact"
-	"github.com/erenari/bpfcompat/internal/registry"
+	"github.com/kernel-guard/bpfcompat/internal/artifact"
+	"github.com/kernel-guard/bpfcompat/internal/registry"
 )
 
 func TestFetchArtifactLocalPath(t *testing.T) {

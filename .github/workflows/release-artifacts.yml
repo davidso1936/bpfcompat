@@ -75,9 +75,9 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p dist
-          LDFLAGS="-X adaptive-bpf-runtime-program/internal/version.Version=${VERSION} \
-            -X adaptive-bpf-runtime-program/internal/version.Commit=${COMMIT} \
-            -X adaptive-bpf-runtime-program/internal/version.BuildDate=${BUILD_DATE}"
+          LDFLAGS="-X github.com/kernel-guard/bpfcompat/internal/version.Version=${VERSION} \
+            -X github.com/kernel-guard/bpfcompat/internal/version.Commit=${COMMIT} \
+            -X github.com/kernel-guard/bpfcompat/internal/version.BuildDate=${BUILD_DATE}"
           go build -trimpath -ldflags "$LDFLAGS" -o dist/bpfcompat ./cmd/bpfcompat
       - name: Compute checksums
         run: |

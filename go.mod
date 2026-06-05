@@ -1,4 +1,4 @@
-module github.com/erenari/bpfcompat
+module github.com/kernel-guard/bpfcompat
 
 go 1.23.0
 

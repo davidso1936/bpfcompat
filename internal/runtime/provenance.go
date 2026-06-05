@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/erenari/bpfcompat/internal/registry"
+	"github.com/kernel-guard/bpfcompat/internal/registry"
 )
 
 const runtimeHistoryVerificationSchemaVersion = "runtime_history_verification.v0.1"

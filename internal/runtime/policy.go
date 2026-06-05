@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/erenari/bpfcompat/internal/registry"
+	"github.com/kernel-guard/bpfcompat/internal/registry"
 )
 
 func normalizePolicy(p SelectionPolicy) SelectionPolicy {

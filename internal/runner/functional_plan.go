@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/erenari/bpfcompat/internal/manifest"
+	"github.com/kernel-guard/bpfcompat/internal/manifest"
 )
 
 const functionalPlanVersion = "functional_plan.v0.1"

@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/erenari/bpfcompat/internal/matrix"
-	"github.com/erenari/bpfcompat/internal/vm"
+	"github.com/kernel-guard/bpfcompat/internal/matrix"
+	"github.com/kernel-guard/bpfcompat/internal/vm"
 )
 
 func TestExecuteTargetsHonorsConcurrencyAndOrder(t *testing.T) {

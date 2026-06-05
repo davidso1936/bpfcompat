@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/erenari/bpfcompat/internal/manifest"
+	"github.com/kernel-guard/bpfcompat/internal/manifest"
 )
 
 func TestWriteFunctionalPlan(t *testing.T) {

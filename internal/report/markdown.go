@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/erenari/bpfcompat/pkg/schema"
+	"github.com/kernel-guard/bpfcompat/pkg/schema"
 )
 
 func WriteMarkdown(outPath string, report schema.ReportV01) error {

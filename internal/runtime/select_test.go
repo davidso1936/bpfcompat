@@ -3,7 +3,7 @@ package runtime
 import (
 	"testing"
 
-	"github.com/erenari/bpfcompat/internal/registry"
+	"github.com/kernel-guard/bpfcompat/internal/registry"
 )
 
 func TestSelectBestArtifactVersionPrefersMatchingProfile(t *testing.T) {

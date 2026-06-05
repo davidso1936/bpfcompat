@@ -10,9 +10,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/erenari/bpfcompat/internal/agent"
-	"github.com/erenari/bpfcompat/internal/registry"
-	"github.com/erenari/bpfcompat/internal/runner"
+	"github.com/kernel-guard/bpfcompat/internal/agent"
+	"github.com/kernel-guard/bpfcompat/internal/registry"
+	"github.com/kernel-guard/bpfcompat/internal/runner"
 )
 
 func TestAgentApplyWithoutApprovalFetchesOnly(t *testing.T) {

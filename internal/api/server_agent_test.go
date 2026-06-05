@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/erenari/bpfcompat/internal/cloudregistry"
+	"github.com/kernel-guard/bpfcompat/internal/cloudregistry"
 )
 
 func TestAgentDecisionSelectsProjectArtifact(t *testing.T) {

@@ -140,8 +140,9 @@ func httpStatusForError(err error) int {
 // Existing handlers will migrate to this incrementally so we get the
 // status-code dispatch for free as call sites flip over.
 //
-//nolint:unused // adopted incrementally; landed here so the test suite can
 // validate the contract before every handler is converted.
+//
+//nolint:unused // adopted incrementally; landed here so the test suite can
 func writeAPIError(w http.ResponseWriter, err error) {
 	status := httpStatusForError(err)
 	writeError(w, status, err.Error())

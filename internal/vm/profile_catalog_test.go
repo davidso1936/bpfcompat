@@ -29,4 +29,3 @@ func TestAllProfileYAMLLoadAndValidate(t *testing.T) {
 		seenIDs[profile.ID] = struct{}{}
 	}
 }
-

@@ -16,7 +16,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/erenari/bpfcompat/internal/classifier"
+	"github.com/kernel-guard/bpfcompat/internal/classifier"
 )
 
 const executeSchemaVersion = "runtime_execute.v0.1"

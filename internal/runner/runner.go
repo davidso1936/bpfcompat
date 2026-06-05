@@ -12,14 +12,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/erenari/bpfcompat/internal/artifact"
-	"github.com/erenari/bpfcompat/internal/classifier"
-	"github.com/erenari/bpfcompat/internal/manifest"
-	"github.com/erenari/bpfcompat/internal/matrix"
-	"github.com/erenari/bpfcompat/internal/registry"
-	"github.com/erenari/bpfcompat/internal/report"
-	"github.com/erenari/bpfcompat/internal/vm"
-	"github.com/erenari/bpfcompat/pkg/schema"
+	"github.com/kernel-guard/bpfcompat/internal/artifact"
+	"github.com/kernel-guard/bpfcompat/internal/classifier"
+	"github.com/kernel-guard/bpfcompat/internal/manifest"
+	"github.com/kernel-guard/bpfcompat/internal/matrix"
+	"github.com/kernel-guard/bpfcompat/internal/registry"
+	"github.com/kernel-guard/bpfcompat/internal/report"
+	"github.com/kernel-guard/bpfcompat/internal/vm"
+	"github.com/kernel-guard/bpfcompat/pkg/schema"
 )
 
 type RunResult struct {

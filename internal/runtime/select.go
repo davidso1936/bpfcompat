@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/erenari/bpfcompat/internal/registry"
+	"github.com/kernel-guard/bpfcompat/internal/registry"
 )
 
 const selectionSchemaVersion = "runtime_selection.v0.1"

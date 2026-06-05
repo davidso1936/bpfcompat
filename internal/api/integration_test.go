@@ -71,8 +71,8 @@ func TestIntegrationServeSmoke(t *testing.T) {
 	t.Run("readyz_returns_structured_payload", func(t *testing.T) {
 		body := requireGet(t, client, base+"/readyz", http.StatusOK)
 		var payload struct {
-			Status  string `json:"status"`
-			Checks  []struct {
+			Status string `json:"status"`
+			Checks []struct {
 				Name string `json:"name"`
 				OK   bool   `json:"ok"`
 			} `json:"checks"`

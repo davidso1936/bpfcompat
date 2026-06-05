@@ -1,4 +1,4 @@
-# golangci-lint configuration for the adaptive-bpf-runtime-program repository.
+# golangci-lint configuration for the github.com/kernel-guard/bpfcompat repository.
 #
 # Goal: enforce the linters that a senior reviewer would expect on a security-
 # adjacent BPF runtime — no surprises, no false friend errors, and a strong

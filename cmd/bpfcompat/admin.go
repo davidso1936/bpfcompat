@@ -11,9 +11,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/erenari/bpfcompat/internal/cloudregistry"
-	"github.com/erenari/bpfcompat/internal/registry"
-	"github.com/erenari/bpfcompat/internal/runner"
+	"github.com/kernel-guard/bpfcompat/internal/cloudregistry"
+	"github.com/kernel-guard/bpfcompat/internal/registry"
+	"github.com/kernel-guard/bpfcompat/internal/runner"
 )
 
 // runAdmin dispatches the bpfcompat admin subcommands. These are operator

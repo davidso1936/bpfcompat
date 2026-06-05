@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/erenari/bpfcompat/pkg/schema"
+	"github.com/kernel-guard/bpfcompat/pkg/schema"
 )
 
 const diffSchemaVersion = "compat_diff.v0.1"

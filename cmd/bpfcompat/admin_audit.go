@@ -12,7 +12,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/erenari/bpfcompat/internal/runner"
+	"github.com/kernel-guard/bpfcompat/internal/runner"
 )
 
 // auditSignatureEnvelope is the on-disk shape of the detached audit-log

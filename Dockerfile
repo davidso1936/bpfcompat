@@ -60,9 +60,9 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/go/pkg/mod \
     go build -mod=vendor -trimpath \
       -ldflags "-s -w -buildid= \
-        -X github.com/erenari/bpfcompat/internal/version.Version=${VERSION} \
-        -X github.com/erenari/bpfcompat/internal/version.Commit=${COMMIT} \
-        -X github.com/erenari/bpfcompat/internal/version.BuildDate=${BUILD_DATE}" \
+        -X github.com/kernel-guard/bpfcompat/internal/version.Version=${VERSION} \
+        -X github.com/kernel-guard/bpfcompat/internal/version.Commit=${COMMIT} \
+        -X github.com/kernel-guard/bpfcompat/internal/version.BuildDate=${BUILD_DATE}" \
       -o /out/bpfcompat ./cmd/bpfcompat
 
 #######################################

@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/erenari/bpfcompat/pkg/schema"
+	"github.com/kernel-guard/bpfcompat/pkg/schema"
 )
 
 func TestBuildDetectsRegressionsAndImprovements(t *testing.T) {

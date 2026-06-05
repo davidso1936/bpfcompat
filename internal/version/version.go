@@ -15,9 +15,9 @@ const Name = "bpfcompat"
 // These three vars are intentionally `var` (not `const`) so they can be
 // overridden by -ldflags at build time:
 //
-//	go build -ldflags "-X github.com/erenari/bpfcompat/internal/version.Version=v1.2.3 \
-//	  -X github.com/erenari/bpfcompat/internal/version.Commit=$(git rev-parse --short HEAD) \
-//	  -X github.com/erenari/bpfcompat/internal/version.BuildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+//	go build -ldflags "-X github.com/kernel-guard/bpfcompat/internal/version.Version=v1.2.3 \
+//	  -X github.com/kernel-guard/bpfcompat/internal/version.Commit=$(git rev-parse --short HEAD) \
+//	  -X github.com/kernel-guard/bpfcompat/internal/version.BuildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 //
 // At runtime the human-readable string returned by String() folds these
 // together and falls back to runtime/debug.ReadBuildInfo() for `go install`

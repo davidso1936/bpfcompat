@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/erenari/bpfcompat/internal/cloudregistry"
+	"github.com/kernel-guard/bpfcompat/internal/cloudregistry"
 )
 
 // TestAuditExportAndVerifyRoundtrip is the load-bearing test for the

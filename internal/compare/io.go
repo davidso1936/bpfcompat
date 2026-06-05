@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/erenari/bpfcompat/pkg/schema"
+	"github.com/kernel-guard/bpfcompat/pkg/schema"
 )
 
 func LoadReport(path string) (schema.ReportV01, error) {

@@ -7,7 +7,7 @@ CLANG ?= clang
 VERSION    ?= $(shell git describe --tags --dirty --always 2>/dev/null || echo 0.1.0-dev)
 COMMIT     ?= $(shell git rev-parse --short=12 HEAD 2>/dev/null || echo unknown)
 BUILD_DATE ?= $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
-VERSION_PKG := github.com/erenari/bpfcompat/internal/version
+VERSION_PKG := github.com/kernel-guard/bpfcompat/internal/version
 LDFLAGS    ?= -X $(VERSION_PKG).Version=$(VERSION) \
               -X $(VERSION_PKG).Commit=$(COMMIT) \
               -X $(VERSION_PKG).BuildDate=$(BUILD_DATE)

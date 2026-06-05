@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/erenari/bpfcompat/internal/registry"
-	"github.com/erenari/bpfcompat/internal/runtime"
+	"github.com/kernel-guard/bpfcompat/internal/registry"
+	"github.com/kernel-guard/bpfcompat/internal/runtime"
 )
 
 const DecisionSchemaVersion = "agent_decision.v0.1"

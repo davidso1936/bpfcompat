@@ -14,8 +14,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/erenari/bpfcompat/internal/cloudregistry"
-	"github.com/erenari/bpfcompat/internal/runtime"
+	"github.com/kernel-guard/bpfcompat/internal/cloudregistry"
+	"github.com/kernel-guard/bpfcompat/internal/runtime"
 )
 
 func TestWriteEndpointRequiresConfiguredAPIKey(t *testing.T) {

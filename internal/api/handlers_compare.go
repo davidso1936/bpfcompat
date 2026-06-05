@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/erenari/bpfcompat/internal/compare"
-	"github.com/erenari/bpfcompat/internal/registry"
+	"github.com/kernel-guard/bpfcompat/internal/compare"
+	"github.com/kernel-guard/bpfcompat/internal/registry"
 )
 
 // handleCompare diffs two reports either supplied directly or resolved from

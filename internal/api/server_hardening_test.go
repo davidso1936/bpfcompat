@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/erenari/bpfcompat/internal/runner"
-	"github.com/erenari/bpfcompat/pkg/schema"
+	"github.com/kernel-guard/bpfcompat/internal/runner"
+	"github.com/kernel-guard/bpfcompat/pkg/schema"
 )
 
 func TestValidateStartRejectsUnknownProfile(t *testing.T) {

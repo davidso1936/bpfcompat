@@ -11,8 +11,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/erenari/bpfcompat/internal/runner"
-	"github.com/erenari/bpfcompat/internal/suite"
+	"github.com/kernel-guard/bpfcompat/internal/runner"
+	"github.com/kernel-guard/bpfcompat/internal/suite"
 )
 
 func runSuite(args []string) int {

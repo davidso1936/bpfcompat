@@ -15,8 +15,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/erenari/bpfcompat/internal/artifact"
-	"github.com/erenari/bpfcompat/internal/registry"
+	"github.com/kernel-guard/bpfcompat/internal/artifact"
+	"github.com/kernel-guard/bpfcompat/internal/registry"
 )
 
 const fetchSchemaVersion = "runtime_fetch.v0.1"

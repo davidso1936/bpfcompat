@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/erenari/bpfcompat/internal/registry"
+	"github.com/kernel-guard/bpfcompat/internal/registry"
 )
 
 func TestVerifySelectedArtifactProvenancePass(t *testing.T) {

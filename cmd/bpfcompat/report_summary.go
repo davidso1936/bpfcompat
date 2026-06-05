@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"os"
 
-	reportpkg "github.com/erenari/bpfcompat/internal/report"
-	"github.com/erenari/bpfcompat/internal/runner"
-	"github.com/erenari/bpfcompat/pkg/schema"
+	reportpkg "github.com/kernel-guard/bpfcompat/internal/report"
+	"github.com/kernel-guard/bpfcompat/internal/runner"
+	"github.com/kernel-guard/bpfcompat/pkg/schema"
 )
 
 func runReportSummary(args []string) int {

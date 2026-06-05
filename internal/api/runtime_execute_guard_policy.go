@@ -11,9 +11,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/erenari/bpfcompat/internal/manifest"
-	"github.com/erenari/bpfcompat/internal/registry"
-	"github.com/erenari/bpfcompat/internal/runtime"
+	"github.com/kernel-guard/bpfcompat/internal/manifest"
+	"github.com/kernel-guard/bpfcompat/internal/registry"
+	"github.com/kernel-guard/bpfcompat/internal/runtime"
 	"gopkg.in/yaml.v3"
 )
 

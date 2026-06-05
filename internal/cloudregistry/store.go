@@ -20,8 +20,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/erenari/bpfcompat/internal/registry"
-	"github.com/erenari/bpfcompat/pkg/schema"
+	"github.com/kernel-guard/bpfcompat/internal/registry"
+	"github.com/kernel-guard/bpfcompat/pkg/schema"
 )
 
 // readSecureRandom fills b with cryptographically secure random bytes.

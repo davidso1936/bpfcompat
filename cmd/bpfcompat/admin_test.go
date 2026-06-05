@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/erenari/bpfcompat/internal/cloudregistry"
+	"github.com/kernel-guard/bpfcompat/internal/cloudregistry"
 )
 
 // TestAdminListTokensJSONRoundtrip seeds tokens.json with a mix of hashed

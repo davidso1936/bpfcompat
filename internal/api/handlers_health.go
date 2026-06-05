@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/erenari/bpfcompat/internal/version"
+	"github.com/kernel-guard/bpfcompat/internal/version"
 )
 
 // Health-style endpoints. /api/health is the legacy lightweight check;

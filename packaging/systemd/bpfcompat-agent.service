@@ -1,6 +1,6 @@
 [Unit]
 Description=bpfcompat runtime delivery agent
-Documentation=https://github.com/erenari/bpfcompat
+Documentation=https://github.com/kernel-guard/bpfcompat
 Wants=network-online.target
 After=network-online.target
 
