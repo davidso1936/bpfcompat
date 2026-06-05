@@ -196,7 +196,7 @@ requires a self-hosted Linux runner with KVM access (`/dev/kvm`).
 Single artifact:
 
 ```yaml
-- uses: Kernel-Guard/bpfcompat@v0.1.2
+- uses: Kernel-Guard/bpfcompat@v0.1.3
   with:
     artifact: path/to/program.bpf.o
     manifest: path/to/manifest.yaml
@@ -209,7 +209,7 @@ Single artifact:
 Suite mode:
 
 ```yaml
-- uses: Kernel-Guard/bpfcompat@v0.1.2
+- uses: Kernel-Guard/bpfcompat@v0.1.3
   with:
     suite: suites/project.yaml
     suite-out: reports/suite.json

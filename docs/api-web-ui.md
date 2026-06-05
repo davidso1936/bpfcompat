@@ -18,10 +18,14 @@ The web UI is intentionally optimized for the primary compatibility workflow:
 5. read the verdict and pass/fail matrix first, then open drill-down evidence only when
    needed.
 
-After a run, the first result panel shows a plain verdict, required/optional
-target counts, and a color-coded matrix. History, compare, and runtime
-decision proof stay behind the **Advanced evidence and history** drawer and are
-loaded only when that drawer is opened.
+Target selection supports presets plus a search/filter box for narrowing long
+kernel catalogs by distro, kernel family, or architecture. After a run, the
+first result panel shows a plain verdict, required/optional target counts, a
+filterable color-coded matrix, and required failures sorted first. The run
+builder also shows a live readiness strip for selected targets, BPF input, and
+expected output before the gate starts. History, compare, and runtime decision
+proof stay behind the **Advanced evidence and history** drawer and are loaded
+only when that drawer is opened.
 
 For projects that ship collections of BPF objects/programs, use suite mode in
 the CLI or GitHub Action. The web UI previews suite cases, explains the

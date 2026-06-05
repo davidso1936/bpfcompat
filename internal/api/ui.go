@@ -137,6 +137,17 @@ const uiHTML = `<!doctype html>
       gap: 8px;
       margin-bottom: 8px;
     }
+    .target-filter-row {
+      display: grid;
+      gap: 4px;
+      align-items: center;
+      margin-top: 8px;
+    }
+    .target-filter-count {
+      color: #aebbd0;
+      font-size: 12px;
+      white-space: nowrap;
+    }
     .quad-actions {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -299,6 +310,33 @@ const uiHTML = `<!doctype html>
     .matrix-wrap table {
       min-width: 760px;
     }
+    .matrix-toolbar {
+      border: 1px solid #2f3748;
+      border-radius: 6px;
+      background: #101723;
+      padding: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+    .matrix-filter-buttons {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .matrix-filter-buttons button {
+      width: auto;
+      min-width: 86px;
+      padding: 6px 8px;
+      font-size: 12px;
+    }
+    .matrix-toolbar-meta {
+      color: #aebbd0;
+      font-size: 12px;
+    }
     .matrix-counts {
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -391,6 +429,48 @@ const uiHTML = `<!doctype html>
     .target-warning {
       color: #f3c777;
       margin-top: 2px;
+    }
+    .gate-readiness {
+      border: 1px solid #2f3748;
+      border-radius: 6px;
+      background: #101723;
+      display: grid;
+      gap: 7px;
+      padding: 9px;
+      margin-bottom: 10px;
+    }
+    .readiness-item {
+      display: grid;
+      grid-template-columns: 12px 76px 1fr;
+      gap: 7px;
+      align-items: center;
+      min-width: 0;
+      color: #b8c5da;
+      font-size: 12px;
+    }
+    .readiness-item strong {
+      color: #edf1f8;
+      font-size: 12px;
+    }
+    .readiness-item span:last-child {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .readiness-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: #856b2c;
+      border: 1px solid #caa54e;
+    }
+    .readiness-item.ready .readiness-dot {
+      background: #2f7b58;
+      border-color: #68c58f;
+    }
+    .readiness-item.blocked .readiness-dot {
+      background: #8b4a4a;
+      border-color: #d77a7a;
     }
     .suite-preview {
       border: 1px solid #2f3748;
@@ -599,6 +679,10 @@ const uiHTML = `<!doctype html>
           <button type="button" class="secondary" data-preset="custom">Custom</button>
         </div>
         <div id="targetPresetHint" class="hint">Loading target catalog...</div>
+        <div class="target-filter-row">
+          <input id="targetFilter" placeholder="Filter targets by distro, kernel, or arch">
+          <div id="targetFilterCount" class="target-filter-count">0 targets</div>
+        </div>
         <div class="profile-header">
           <span>Run</span>
           <span>Kernel / distro profile</span>
@@ -759,6 +843,23 @@ programs:
         <div class="step-title">
           <strong>4. Run</strong>
           <span>gate selected targets</span>
+        </div>
+        <div id="gateReadiness" class="gate-readiness">
+          <div id="readyTargets" class="readiness-item">
+            <span class="readiness-dot"></span>
+            <strong>Targets</strong>
+            <span id="readyTargetsText">No targets selected</span>
+          </div>
+          <div id="readyBPF" class="readiness-item">
+            <span class="readiness-dot"></span>
+            <strong>BPF</strong>
+            <span id="readyBPFText">No object or suite selected</span>
+          </div>
+          <div id="readyOutput" class="readiness-item">
+            <span class="readiness-dot"></span>
+            <strong>Output</strong>
+            <span id="readyOutputText">Pass/fail matrix after run</span>
+          </div>
         </div>
         <button id="runBtn">Run Compatibility Gate</button>
         <div id="runHint" class="hint">Single-object mode runs directly here. Collection mode generates the recommended CI suite configuration.</div>
@@ -950,7 +1051,7 @@ programs:
     let mode = "artifact";
     let bpfInputMode = "single";
     let selectedPreset = "ubuntu-lts";
-    const state = { profiles: [], history: [], decisions: [], suite: { name: "", cases: [] } };
+    const state = { profiles: [], history: [], decisions: [], suite: { name: "", cases: [] }, matrixFilter: "all" };
     let apiConfig = null;
     let runInFlight = false;
     let evidenceLoaded = false;
@@ -970,6 +1071,14 @@ programs:
     const runBtnEl = byId("runBtn");
     const runHintEl = byId("runHint");
     const targetPresetHintEl = byId("targetPresetHint");
+    const targetFilterEl = byId("targetFilter");
+    const targetFilterCountEl = byId("targetFilterCount");
+    const readyTargetsEl = byId("readyTargets");
+    const readyTargetsTextEl = byId("readyTargetsText");
+    const readyBPFEl = byId("readyBPF");
+    const readyBPFTextEl = byId("readyBPFText");
+    const readyOutputEl = byId("readyOutput");
+    const readyOutputTextEl = byId("readyOutputText");
     const suitePreviewEl = byId("suitePreview");
     const suiteActionYamlEl = byId("suiteActionYaml");
     const evidenceDrilldownEl = byId("evidenceDrilldown");
@@ -1027,6 +1136,57 @@ programs:
     function setRuntimeHint(text, error = false) {
       runtimeHintEl.textContent = text || "";
       runtimeHintEl.className = error ? "hint error" : "hint";
+    }
+
+    function setReadinessItem(itemEl, textEl, ready, text) {
+      itemEl.classList.remove("ready", "blocked");
+      itemEl.classList.add(ready ? "ready" : "blocked");
+      textEl.textContent = text;
+    }
+
+    function artifactInputStatus() {
+      const name = byId("artifactName").value.trim();
+      if (mode === "artifact") {
+        const file = byId("artifactFile").files[0];
+        if (file) {
+          return { ready: true, text: (name || file.name.replace(/\.bpf\.o$/i, "")) + " • " + file.name };
+        }
+        return { ready: false, text: "Upload a compiled .bpf.o" };
+      }
+      const sourceFile = byId("sourceFile").files[0];
+      const sourceText = byId("sourceCode").value.trim();
+      if (sourceFile || sourceText) {
+        return { ready: true, text: (name || (sourceFile ? sourceFile.name : "source")) + " • source compile" };
+      }
+      return { ready: false, text: "Add source file or pasted source" };
+    }
+
+    function suiteInputStatus() {
+      const count = state.suite && state.suite.cases ? state.suite.cases.length : 0;
+      if (count > 0) {
+        const name = state.suite.name || "suite";
+        return { ready: true, text: name + " • " + count + " object case(s)" };
+      }
+      return { ready: false, text: "Paste suite YAML with cases" };
+    }
+
+    function updateGateReadiness() {
+      const picks = selectedProfiles();
+      setReadinessItem(
+        readyTargetsEl,
+        readyTargetsTextEl,
+        picks.include.length > 0,
+        picks.include.length + " selected • " + picks.required.length + " required"
+      );
+      const bpfStatus = bpfInputMode === "suite" ? suiteInputStatus() : artifactInputStatus();
+      setReadinessItem(readyBPFEl, readyBPFTextEl, bpfStatus.ready, bpfStatus.text);
+      const outputReady = picks.include.length > 0 && bpfStatus.ready;
+      setReadinessItem(
+        readyOutputEl,
+        readyOutputTextEl,
+        outputReady,
+        bpfInputMode === "suite" ? "CI suite summary + matrix" : "VM-backed pass/fail matrix"
+      );
     }
 
     function deriveProfileHintFromProbe(probe) {
@@ -1405,6 +1565,7 @@ programs:
       byId("sourceMode").style.display = mode === "source" ? "block" : "none";
       setButtonActive("modeArtifact", mode === "artifact");
       setButtonActive("modeSource", mode === "source");
+      updateGateReadiness();
     }
 
     function switchBPFInputMode(nextMode) {
@@ -1425,6 +1586,7 @@ programs:
         setStatus("Single-object mode selected. Upload or compile one BPF object.");
         setVerdict("neutral", "No validation run yet", "Select targets, provide a BPF object, then run the gate.");
       }
+      updateGateReadiness();
     }
 
     byId("modeSingle").addEventListener("click", () => switchBPFInputMode("single"));
@@ -1438,6 +1600,14 @@ programs:
 
     byId("suiteText").addEventListener("input", updateSuitePreview);
     byId("suitePath").addEventListener("input", updateSuitePreview);
+    ["artifactName", "artifactFile", "sourceFile", "sourceCode"].forEach((id) => {
+      const el = byId(id);
+      if (!el) {
+        return;
+      }
+      el.addEventListener("input", updateGateReadiness);
+      el.addEventListener("change", updateGateReadiness);
+    });
     byId("suiteFile").addEventListener("change", () => {
       const file = byId("suiteFile").files[0];
       if (!file) {
@@ -1518,6 +1688,14 @@ programs:
     function createProfileRow(profile) {
       const row = document.createElement("div");
       row.className = "profile";
+      row.dataset.profileSearch = [
+        profile.id,
+        profile.distro,
+        profile.version,
+        profile.kernel_family,
+        profile.arch,
+        profile.transport_note
+      ].filter(Boolean).join(" ").toLowerCase();
       const include = document.createElement("input");
       include.type = "checkbox";
       include.checked = !!profile.transport_supported;
@@ -1578,6 +1756,32 @@ programs:
       });
     }
 
+    function updateTargetFilter() {
+      const filter = targetFilterEl.value.trim().toLowerCase();
+      let visible = 0;
+      document.querySelectorAll("#profiles .profile").forEach((row) => {
+        const match = filter === "" || String(row.dataset.profileSearch || "").includes(filter);
+        row.classList.toggle("hidden", !match);
+        if (match) {
+          visible++;
+        }
+      });
+      const picks = selectedProfiles();
+      const total = state.profiles.length;
+      const selectedLabel = picks.include.length === 1 ? "selected target" : "selected targets";
+      targetFilterCountEl.textContent = visible + "/" + total + " visible • " + picks.include.length + " " + selectedLabel;
+    }
+
+    function scrollFirstSelectedProfileIntoView() {
+      const firstSelected = document.querySelector("input[data-kind='include']:checked");
+      const row = firstSelected ? firstSelected.closest(".profile") : null;
+      if (row) {
+        const list = byId("profiles");
+        const targetTop = row.offsetTop - list.offsetTop - Math.max(0, Math.floor((list.clientHeight - row.clientHeight) / 2));
+        list.scrollTop = Math.max(0, targetTop);
+      }
+    }
+
     function profileMatchesPreset(profile, preset) {
       const id = String(profile.id || "").toLowerCase();
       const distro = String(profile.distro || "").toLowerCase();
@@ -1626,6 +1830,7 @@ programs:
         return;
       }
       selectedPreset = preset;
+      targetFilterEl.value = "";
       const selected = state.profiles.filter((profile) => profileMatchesPreset(profile, preset));
       const selectedIDs = new Set(selected.map((profile) => profile.id));
       document.querySelectorAll("input[data-kind='include']").forEach((input) => {
@@ -1639,6 +1844,7 @@ programs:
       });
       syncTargetPresetButtons();
       updateTargetPresetHint();
+      scrollFirstSelectedProfileIntoView();
     }
 
     function updateTargetPresetHint() {
@@ -1648,6 +1854,8 @@ programs:
         selectedPreset === "rhel-like" ? "RHEL-like" :
         selectedPreset === "aws" ? "AWS" : "Custom";
       targetPresetHintEl.textContent = label + ": " + picks.include.length + " target(s) selected, " + picks.required.length + " required for the gate.";
+      updateTargetFilter();
+      updateGateReadiness();
     }
 
     function appendCell(tr, value, className = "") {
@@ -1717,6 +1925,84 @@ programs:
       return "failed";
     }
 
+    function targetMatchesMatrixFilter(target, filter) {
+      const status = normalizeStatus(target && target.status);
+      switch (filter) {
+        case "failures":
+          return status !== "pass";
+        case "required":
+          return !!(target && target.required);
+        case "passes":
+          return status === "pass";
+        default:
+          return true;
+      }
+    }
+
+    function renderMatrixRows(tbody, targets, filter) {
+      tbody.replaceChildren();
+      const visible = targets.filter((target) => targetMatchesMatrixFilter(target, filter));
+      if (visible.length === 0) {
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = 5;
+        td.textContent = "No targets match this filter.";
+        tr.appendChild(td);
+        tbody.appendChild(tr);
+        return;
+      }
+      visible.forEach((t) => {
+        const tr = document.createElement("tr");
+        tr.classList.add("matrix-row-" + normalizeStatus(t.status));
+        if (t.required && t.status !== "pass") {
+          tr.classList.add("matrix-required-fail");
+        }
+        appendCell(tr, t.profile_id || "-");
+        appendCell(tr, formatProfileEnv(t) + " • " + formatHostKernel(t));
+        appendStatusCell(tr, t.status || "-");
+        appendCell(tr, t.required ? "yes" : "optional");
+        appendCell(tr, formatTargetReason(t));
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderMatrixToolbar(targets, tbody) {
+      const toolbar = document.createElement("div");
+      toolbar.className = "matrix-toolbar";
+      const buttons = document.createElement("div");
+      buttons.className = "matrix-filter-buttons";
+      const filters = [
+        ["all", "All"],
+        ["failures", "Failures"],
+        ["required", "Required"],
+        ["passes", "Passes"]
+      ];
+      filters.forEach(([filter, label]) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "secondary";
+        button.textContent = label;
+        button.classList.toggle("active", state.matrixFilter === filter);
+        button.addEventListener("click", () => {
+          state.matrixFilter = filter;
+          buttons.querySelectorAll("button").forEach((btn) => btn.classList.remove("active"));
+          button.classList.add("active");
+          renderMatrixRows(tbody, targets, state.matrixFilter);
+          meta.textContent = visibleMatrixCount(targets, state.matrixFilter) + "/" + targets.length + " target(s)";
+        });
+        buttons.appendChild(button);
+      });
+      const meta = document.createElement("div");
+      meta.className = "matrix-toolbar-meta";
+      meta.textContent = visibleMatrixCount(targets, state.matrixFilter) + "/" + targets.length + " target(s)";
+      toolbar.append(buttons, meta);
+      return toolbar;
+    }
+
+    function visibleMatrixCount(targets, filter) {
+      return targets.filter((target) => targetMatchesMatrixFilter(target, filter)).length;
+    }
+
     function cleanYAMLValue(raw) {
       let value = String(raw || "").trim();
       if ((value.startsWith("\"") && value.endsWith("\"")) || (value.startsWith("'") && value.endsWith("'"))) {
@@ -1781,7 +2067,7 @@ programs:
         "    runs-on: [self-hosted, linux, x64, kvm]",
         "    steps:",
         "      - uses: actions/checkout@v4",
-        "      - uses: Kernel-Guard/bpfcompat@v0.1.2",
+        "      - uses: Kernel-Guard/bpfcompat@v0.1.3",
         "        with:",
         "          suite: " + suitePath,
         "          suite-out: reports/bpfcompat-suite.json",
@@ -1825,6 +2111,7 @@ programs:
         suitePreviewEl.appendChild(table);
       }
       suiteActionYamlEl.textContent = generateSuiteActionYAML(suite);
+      updateGateReadiness();
     }
 
     async function loadProfiles() {
@@ -1901,27 +2188,16 @@ programs:
         if (aFail !== bFail) return aFail ? -1 : 1;
         return String(a.profile_id || "").localeCompare(String(b.profile_id || ""));
       });
-      targets.forEach((t) => {
-        const tr = document.createElement("tr");
-        tr.classList.add("matrix-row-" + normalizeStatus(t.status));
-        if (t.required && t.status !== "pass") {
-          tr.classList.add("matrix-required-fail");
-        }
-        appendCell(tr, t.profile_id || "-");
-        appendCell(tr, formatProfileEnv(t) + " • " + formatHostKernel(t));
-        appendStatusCell(tr, t.status || "-");
-        appendCell(tr, t.required ? "yes" : "optional");
-        appendCell(tr, formatTargetReason(t));
-        tbody.appendChild(tr);
-      });
+      renderMatrixRows(tbody, targets, state.matrixFilter);
       table.appendChild(tbody);
       wrap.appendChild(table);
-      container.replaceChildren(headline, counts, wrap);
+      container.replaceChildren(headline, counts, renderMatrixToolbar(targets, tbody), wrap);
     }
 
     document.querySelectorAll("button[data-preset]").forEach((btn) => {
       btn.addEventListener("click", () => applyTargetPreset(btn.dataset.preset));
     });
+    targetFilterEl.addEventListener("input", updateTargetFilter);
 
     byId("selectAll").addEventListener("click", () => {
       selectedPreset = "custom";
