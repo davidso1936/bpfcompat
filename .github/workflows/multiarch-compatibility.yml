@@ -5,8 +5,6 @@ name: multiarch-compatibility
 
 on:
   workflow_dispatch:
-  push:
-    tags: ["v*"]
 
 permissions:
   contents: read

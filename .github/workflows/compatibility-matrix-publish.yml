@@ -10,8 +10,6 @@ on:
         description: Deploy generated compatibility site to GitHub Pages. Requires Pages to be enabled for the repo.
         required: false
         default: "false"
-  push:
-    tags: ["v*"]
 
 permissions:
   contents: write
