@@ -1,5 +1,6 @@
-name: Adaptive BPF Compatibility
-description: Run bpfcompat validation and fail CI on compatibility regressions.
+name: BPFCompat eBPF Compatibility Gate
+author: Kernel Guard
+description: Validate eBPF .bpf.o artifacts across Linux kernel profiles and fail CI on compatibility regressions.
 
 inputs:
   suite:
@@ -245,3 +246,7 @@ runs:
 
         popd >/dev/null
         exit "$status"
+
+branding:
+  icon: shield
+  color: blue

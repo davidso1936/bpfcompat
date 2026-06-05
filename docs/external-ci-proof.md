@@ -19,7 +19,7 @@ that compatibility failures block CI with `rc=2`.
 
 Before the public release, the reference repo used a repository secret
 `SOURCE_REPO_PAT` to checkout source artifacts from the private source
-repository. A public repository can reference `erenari/bpfcompat@main`
+repository. A public repository can reference `Kernel-Guard/bpfcompat@v0.1.1`
 directly.
 
 ## Source Refs Validated

@@ -190,12 +190,13 @@ native ARM64 KVM runner.
 ## GitHub Action
 
 This repository includes a composite action that runs `bpfcompat` and appends
-the Markdown report to the GitHub Actions job summary.
+the Markdown report to the GitHub Actions job summary. VM-backed validation
+requires a self-hosted Linux runner with KVM access (`/dev/kvm`).
 
 Single artifact:
 
 ```yaml
-- uses: erenari/bpfcompat@main
+- uses: Kernel-Guard/bpfcompat@v0.1.1
   with:
     artifact: path/to/program.bpf.o
     manifest: path/to/manifest.yaml
@@ -208,12 +209,19 @@ Single artifact:
 Suite mode:
 
 ```yaml
-- uses: erenari/bpfcompat@main
+- uses: Kernel-Guard/bpfcompat@v0.1.1
   with:
     suite: suites/project.yaml
     suite-out: reports/suite.json
     suite-markdown: reports/suite.md
 ```
+
+Marketplace quick start:
+
+1. Add a self-hosted Linux runner with KVM enabled.
+2. Commit compiled `.bpf.o` artifacts, manifests, and a matrix YAML.
+3. Use the action in CI to produce JSON, Markdown, and job-summary evidence.
+4. Treat exit code `2` as a compatibility gate failure.
 
 ## Web UI / API
 
