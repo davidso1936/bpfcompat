@@ -324,3 +324,97 @@ revoked_agents: ["host-1"]
 		t.Fatalf("unexpected revocation drill entry: %+v", entries)
 	}
 }
+
+func TestAgentPreflightFetchOnlyPasses(t *testing.T) {
+	workDir := t.TempDir()
+	outDir := filepath.Join(workDir, "selected")
+
+	code := runAgentPreflight([]string{
+		"--workdir", workDir,
+		"--out-dir", outDir,
+		"--agent-id", "host-1",
+		"--check-host-probe=false",
+		"--json",
+	})
+	if code != runner.ExitSuccess {
+		t.Fatalf("expected preflight success, got %d", code)
+	}
+
+	result := buildAgentPreflight(agentPreflightOptions{
+		WorkDir:        workDir,
+		OutDir:         outDir,
+		AgentID:        "host-1",
+		CheckHostProbe: false,
+	})
+	if result.Status != "pass" {
+		t.Fatalf("expected pass result: %+v", result)
+	}
+	if checkStatus(result, "load_policy") != "skip" {
+		t.Fatalf("expected fetch-only load policy skip: %+v", result.Checks)
+	}
+	if checkStatus(result, "validator_binary") != "skip" {
+		t.Fatalf("expected fetch-only validator skip: %+v", result.Checks)
+	}
+}
+
+func TestAgentPreflightIncludeLoadValidatesPolicyAndValidator(t *testing.T) {
+	workDir := t.TempDir()
+	policyPath := filepath.Join(workDir, "policy.yaml")
+	if err := os.WriteFile(policyPath, []byte(`schema_version: agent_load_policy.v0.1
+default_action: deny
+rules: []
+`), 0o644); err != nil {
+		t.Fatalf("write policy: %v", err)
+	}
+	validatorPath := filepath.Join(workDir, "bpfcompat-validator")
+	if err := os.WriteFile(validatorPath, []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil {
+		t.Fatalf("write validator: %v", err)
+	}
+
+	result := buildAgentPreflight(agentPreflightOptions{
+		WorkDir:           workDir,
+		OutDir:            filepath.Join(workDir, "selected"),
+		AgentID:           "host-1",
+		LoadPolicyPath:    policyPath,
+		RequireLoadPolicy: true,
+		ValidatorPath:     validatorPath,
+		IncludeLoad:       true,
+		CheckHostProbe:    false,
+	})
+	if result.Status != "pass" {
+		t.Fatalf("expected load preflight pass: %+v", result)
+	}
+	if checkStatus(result, "load_policy") != "pass" {
+		t.Fatalf("expected load policy pass: %+v", result.Checks)
+	}
+	if checkStatus(result, "validator_binary") != "pass" {
+		t.Fatalf("expected validator pass: %+v", result.Checks)
+	}
+}
+
+func TestAgentPreflightIncludeLoadFailsWithoutPolicy(t *testing.T) {
+	workDir := t.TempDir()
+	result := buildAgentPreflight(agentPreflightOptions{
+		WorkDir:           workDir,
+		OutDir:            filepath.Join(workDir, "selected"),
+		AgentID:           "host-1",
+		RequireLoadPolicy: true,
+		IncludeLoad:       true,
+		CheckHostProbe:    false,
+	})
+	if result.Status != "fail" {
+		t.Fatalf("expected load preflight failure: %+v", result)
+	}
+	if checkStatus(result, "load_policy") != "fail" {
+		t.Fatalf("expected load policy failure: %+v", result.Checks)
+	}
+}
+
+func checkStatus(result agentPreflightResult, name string) string {
+	for _, check := range result.Checks {
+		if check.Name == name {
+			return check.Status
+		}
+	}
+	return ""
+}

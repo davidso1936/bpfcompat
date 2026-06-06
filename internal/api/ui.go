@@ -745,12 +745,21 @@ const uiHTML = `<!doctype html>
           <textarea id="suiteText" placeholder="name: my-bpf-suite
 defaults:
   matrix: matrices/dev-one.yaml
+  validation_mode: load_attach
 cases:
   - name: exec-tracepoint
     artifact: build/exec_tracepoint.bpf.o
     manifest: manifests/exec_tracepoint.yaml
   - name: network-xdp
-    artifact: build/network_xdp.bpf.o"></textarea>
+    artifact: build/network_xdp.bpf.o
+    validation_mode: load_only
+  - name: exec-behavior
+    artifact: build/exec_tracepoint.bpf.o
+    test:
+      mode: behavior
+      command: ./scripts/smoke-exec.sh
+      expect:
+        exit_code: 0"></textarea>
           <label>Suite Path in CI</label>
           <input id="suitePath" value="suites/project.yaml">
           <div id="suitePreview" class="suite-preview">
@@ -793,11 +802,11 @@ cases:
               <span>Default web path: libbpf load plus best-effort attach evidence.</span>
             </span>
           </label>
-          <label class="intent-card disabled" id="intentLoadOnly">
-            <input type="radio" name="testIntent" value="load_only" disabled>
+          <label class="intent-card" id="intentLoadOnly">
+            <input type="radio" name="testIntent" value="load_only">
             <span class="intent-label">
               <strong>Load only</strong>
-              <span>Available in lower-level validator/agent flows, not exposed by this web gate yet.</span>
+              <span>libbpf load and verifier evidence only; attach and behavior commands are skipped.</span>
             </span>
           </label>
           <label class="intent-card disabled" id="intentBehavior">
@@ -808,7 +817,7 @@ cases:
             </span>
           </label>
         </div>
-        <div id="testIntentHint" class="hint">This web gate currently proves load and attach compatibility. Behavior assertions belong in suite manifests and CI.</div>
+        <div id="testIntentHint" class="hint">Load-only checks verifier/kernel compatibility. Load + attach adds hook evidence. Behavior assertions belong in suite manifests and CI.</div>
       </div>
 
       <details class="advanced-settings">
@@ -1051,6 +1060,7 @@ programs:
     let mode = "artifact";
     let bpfInputMode = "single";
     let selectedPreset = "ubuntu-lts";
+    let testIntent = "load_attach";
     const state = { profiles: [], history: [], decisions: [], suite: { name: "", cases: [] }, matrixFilter: "all" };
     let apiConfig = null;
     let runInFlight = false;
@@ -1181,11 +1191,13 @@ programs:
       const bpfStatus = bpfInputMode === "suite" ? suiteInputStatus() : artifactInputStatus();
       setReadinessItem(readyBPFEl, readyBPFTextEl, bpfStatus.ready, bpfStatus.text);
       const outputReady = picks.include.length > 0 && bpfStatus.ready;
+      const outputText = bpfInputMode === "suite" ? "CI suite summary + matrix" :
+        testIntent === "load_only" ? "VM-backed load/verifier matrix" : "VM-backed load + attach matrix";
       setReadinessItem(
         readyOutputEl,
         readyOutputTextEl,
         outputReady,
-        bpfInputMode === "suite" ? "CI suite summary + matrix" : "VM-backed pass/fail matrix"
+        outputText
       );
     }
 
@@ -1568,6 +1580,26 @@ programs:
       updateGateReadiness();
     }
 
+    function switchTestIntent(nextIntent) {
+      if (nextIntent === "behavior") {
+        return;
+      }
+      testIntent = nextIntent === "load_only" ? "load_only" : "load_attach";
+      document.querySelectorAll("input[name='testIntent']").forEach((input) => {
+        input.checked = input.value === testIntent;
+        const card = input.closest(".intent-card");
+        if (card) {
+          card.classList.toggle("active", input.value === testIntent);
+        }
+      });
+      if (testIntent === "load_only") {
+        byId("testIntentHint").textContent = "Load-only mode proves libbpf/verifier compatibility and skips attach attempts and behavior commands.";
+      } else {
+        byId("testIntentHint").textContent = "Load + attach mode proves libbpf/verifier compatibility plus hook attach evidence.";
+      }
+      updateGateReadiness();
+    }
+
     function switchBPFInputMode(nextMode) {
       bpfInputMode = nextMode;
       byId("singleInputMode").style.display = bpfInputMode === "single" ? "block" : "none";
@@ -1593,6 +1625,8 @@ programs:
     byId("modeSuite").addEventListener("click", () => switchBPFInputMode("suite"));
     byId("modeArtifact").addEventListener("click", () => switchMode("artifact"));
     byId("modeSource").addEventListener("click", () => switchMode("source"));
+    byId("intentLoadAttach").addEventListener("click", () => switchTestIntent("load_attach"));
+    byId("intentLoadOnly").addEventListener("click", () => switchTestIntent("load_only"));
     runtimeModeButtons.probe.addEventListener("click", () => setRuntimeMode("probe"));
     runtimeModeButtons.select.addEventListener("click", () => setRuntimeMode("select"));
     runtimeModeButtons.fetch.addEventListener("click", () => setRuntimeMode("fetch"));
@@ -2012,7 +2046,7 @@ programs:
     }
 
     function parseSuitePreview(text) {
-      const suite = { name: "", cases: [] };
+      const suite = { name: "", defaultMode: "", cases: [] };
       let current = null;
       String(text || "").split(/\r?\n/).forEach((line) => {
         const trimmed = line.trim();
@@ -2024,16 +2058,21 @@ programs:
           suite.name = cleanYAMLValue(match[1]);
           return;
         }
+        match = line.match(/^\s+validation_mode:\s*(.+)$/);
+        if (match && !current) {
+          suite.defaultMode = cleanYAMLValue(match[1]);
+          return;
+        }
         match = line.match(/^\s*-\s+name:\s*(.+)$/);
         if (match) {
-          current = { name: cleanYAMLValue(match[1]), artifact: "", manifest: "", artifactName: "" };
+          current = { name: cleanYAMLValue(match[1]), artifact: "", manifest: "", artifactName: "", validationMode: "", testMode: "", testCommand: "" };
           suite.cases.push(current);
           return;
         }
         if (!current) {
           return;
         }
-        match = line.match(/^\s+(artifact|manifest|artifact_name):\s*(.+)$/);
+        match = line.match(/^\s+(artifact|manifest|artifact_name|validation_mode|mode|command):\s*(.+)$/);
         if (!match) {
           return;
         }
@@ -2045,6 +2084,12 @@ programs:
           current.manifest = value;
         } else if (key === "artifact_name") {
           current.artifactName = value;
+        } else if (key === "validation_mode") {
+          current.validationMode = value;
+        } else if (key === "mode") {
+          current.testMode = value;
+        } else if (key === "command") {
+          current.testCommand = value;
         }
       });
       return suite;
@@ -2092,7 +2137,7 @@ programs:
         const table = document.createElement("table");
         const thead = document.createElement("thead");
         const headRow = document.createElement("tr");
-        ["Case", "Artifact", "Manifest"].forEach((name) => {
+        ["Case", "Mode", "Artifact", "Manifest", "Behavior"].forEach((name) => {
           const th = document.createElement("th");
           th.textContent = name;
           headRow.appendChild(th);
@@ -2102,9 +2147,12 @@ programs:
         const tbody = document.createElement("tbody");
         suite.cases.forEach((c) => {
           const tr = document.createElement("tr");
+          const mode = c.testMode === "behavior" ? "behavior" : (c.validationMode || suite.defaultMode || "default");
           appendCell(tr, c.artifactName || c.name || "-");
+          appendCell(tr, mode);
           appendCell(tr, c.artifact || "-");
           appendCell(tr, c.manifest || "-");
+          appendCell(tr, c.testMode === "behavior" ? (c.testCommand || "behavior command") : "-");
           tbody.appendChild(tr);
         });
         table.appendChild(tbody);
@@ -2319,6 +2367,7 @@ programs:
         fd.append("artifact_version", byId("artifactVersion").value.trim());
         fd.append("artifact_variant", byId("artifactVariant").value.trim());
         fd.append("artifact_uri", byId("artifactURI").value.trim());
+        fd.append("validation_mode", testIntent);
         fd.append("timeout", byId("timeout").value.trim());
         fd.append("concurrency", byId("concurrency").value.trim());
 

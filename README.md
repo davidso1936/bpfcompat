@@ -203,6 +203,7 @@ Single artifact:
     matrix: path/to/matrix.yaml
     out: reports/bpfcompat.json
     markdown: reports/bpfcompat.md
+    validation-mode: load_attach
     timeout: 8m
 ```
 
@@ -215,6 +216,10 @@ Suite mode:
     suite-out: reports/suite.json
     suite-markdown: reports/suite.md
 ```
+
+Suite cases can opt into `validation_mode: load_only`, `load_attach`, or
+`behavior`. Behavior mode runs manifest or suite smoke commands while BPF links
+are alive and adds the result to the suite-level collection matrix.
 
 Marketplace quick start:
 

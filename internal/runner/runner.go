@@ -99,6 +99,7 @@ func ExecuteBootstrap(ctx context.Context, cfg Config) (RunResult, error) {
 
 	var stagedManifest string
 	var functionalPlanPath string
+	validationMode := NormalizeValidationMode(cfg.ValidationMode)
 	attachMode := "best-effort"
 	matrixPathAbs, err := filepath.Abs(cfg.MatrixPath)
 	if err != nil {
@@ -132,15 +133,24 @@ func ExecuteBootstrap(ctx context.Context, cfg Config) (RunResult, error) {
 		if err := ensureManifestProfilesExist(mf, m); err != nil {
 			return RunResult{}, err
 		}
-		attachMode = attachModeFromManifest(mf)
+		if validationMode == ValidationModeLoadOnly {
+			attachMode = "disabled"
+		} else {
+			attachMode = attachModeFromManifest(mf)
+		}
 		stagedManifest, err = artifact.Stage(manifestPathAbs, runPaths.InputDir)
 		if err != nil {
 			return RunResult{}, fmt.Errorf("stage manifest: %w", err)
 		}
-		functionalPlanPath, err = writeFunctionalPlan(mf.FunctionalTests, runPaths.InputDir)
-		if err != nil {
-			return RunResult{}, err
+		if shouldRunFunctionalTests(validationMode, mf) {
+			functionalPlanPath, err = writeFunctionalPlan(mf.FunctionalTests, runPaths.InputDir)
+			if err != nil {
+				return RunResult{}, err
+			}
 		}
+	}
+	if validationMode == ValidationModeLoadOnly {
+		attachMode = "disabled"
 	}
 
 	stagedArtifact := filepath.Join(runPaths.InputDir, filepath.Base(meta.AbsolutePath))
@@ -173,6 +183,7 @@ func ExecuteBootstrap(ctx context.Context, cfg Config) (RunResult, error) {
 		attachMode,
 		cfg.Progress,
 	)
+	notes = append(notes, validationModeNotes(validationMode)...)
 	notes = append(notes, targetNotes...)
 
 	status := "pass"
@@ -898,6 +909,36 @@ func attachModeFromManifest(mf manifest.Manifest) string {
 		}
 	}
 	return "best-effort"
+}
+
+func shouldRunFunctionalTests(validationMode string, mf manifest.Manifest) bool {
+	if len(mf.FunctionalTests) == 0 {
+		return false
+	}
+	switch validationMode {
+	case ValidationModeLoadOnly, ValidationModeLoadAttach:
+		return false
+	case ValidationModeBehavior:
+		return true
+	default:
+		// Preserve the pre-mode CLI/suite behavior: manifests that already
+		// contained functional_tests continue to execute them unless a caller
+		// explicitly selected a narrower validation mode.
+		return true
+	}
+}
+
+func validationModeNotes(validationMode string) []string {
+	switch validationMode {
+	case ValidationModeLoadOnly:
+		return []string{"validation mode: load_only (libbpf load/verifier only; attach and behavior commands skipped)"}
+	case ValidationModeLoadAttach:
+		return []string{"validation mode: load_attach (libbpf load plus attach evidence; behavior commands skipped)"}
+	case ValidationModeBehavior:
+		return []string{"validation mode: behavior (load, attach, and manifest functional commands)"}
+	default:
+		return nil
+	}
 }
 
 func ListProfiles(matrixPath string) ([]string, error) {

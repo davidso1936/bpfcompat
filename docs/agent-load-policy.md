@@ -4,6 +4,20 @@
 This keeps the cloud/control-plane decision separate from the final host-owner
 approval.
 
+Before a reviewed host-load attempt, run:
+
+```bash
+bpfcompat agent preflight \
+  --include-load \
+  --load-policy /etc/bpfcompat/agent-load-policy.yaml \
+  --workdir /var/lib/bpfcompat-agent \
+  --out-dir /var/lib/bpfcompat-agent/selected \
+  --probe-use-sudo=false
+```
+
+This checks local state, host probe readiness, policy parse/validation, and
+validator binary availability without loading eBPF.
+
 ```yaml
 schema_version: agent_load_policy.v0.1
 default_action: deny

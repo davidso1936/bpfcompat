@@ -31,6 +31,10 @@ inputs:
     description: Path to manifest YAML.
     required: false
     default: ""
+  validation-mode:
+    description: Optional single-artifact validation mode: load_only, load_attach, or behavior. Suite mode should set validation_mode inside the suite YAML.
+    required: false
+    default: ""
   markdown:
     description: Path to Markdown report output.
     required: false
@@ -214,6 +218,9 @@ runs:
 
         if [[ -n "$manifest_path" ]]; then
           cmd+=(--manifest "$manifest_path")
+        fi
+        if [[ -n "${{ inputs.validation-mode }}" ]]; then
+          cmd+=(--validation-mode "${{ inputs.validation-mode }}")
         fi
         if [[ -n "$markdown_path" ]]; then
           cmd+=(--markdown "$markdown_path")

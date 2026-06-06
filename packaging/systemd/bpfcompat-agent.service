@@ -10,6 +10,7 @@ User=bpfcompat-agent
 Group=bpfcompat-agent
 EnvironmentFile=/etc/bpfcompat/agent.env
 WorkingDirectory=/var/lib/bpfcompat-agent
+ExecStartPre=/bin/sh -c 'exec /usr/local/bin/bpfcompat agent preflight --api-url "$BPFCOMPAT_AGENT_API_URL" --tenant "$BPFCOMPAT_AGENT_TENANT" --project "$BPFCOMPAT_AGENT_PROJECT" --artifact-name "$BPFCOMPAT_AGENT_ARTIFACT_NAME" --agent-id "$BPFCOMPAT_AGENT_ID" --workdir "$BPFCOMPAT_AGENT_WORKDIR" --out-dir "$BPFCOMPAT_AGENT_OUT_DIR" --require-config=true --probe-use-sudo=false'
 ExecStart=/bin/sh -c 'exec /usr/local/bin/bpfcompat agent apply --api-url "$BPFCOMPAT_AGENT_API_URL" --tenant "$BPFCOMPAT_AGENT_TENANT" --project "$BPFCOMPAT_AGENT_PROJECT" --artifact-name "$BPFCOMPAT_AGENT_ARTIFACT_NAME" --agent-id "$BPFCOMPAT_AGENT_ID" --target-profile "$BPFCOMPAT_AGENT_TARGET_PROFILE" --version "$BPFCOMPAT_AGENT_VERSION" --workdir "$BPFCOMPAT_AGENT_WORKDIR" --out-dir "$BPFCOMPAT_AGENT_OUT_DIR" --out "$BPFCOMPAT_AGENT_LAST_RESULT_PATH" $BPFCOMPAT_AGENT_EXTRA_ARGS'
 
 # Alpha service posture: fetch-only runtime delivery can run without elevated

@@ -149,6 +149,24 @@ type agentRevocationDrillResult struct {
 	LoadLedgerPath string                   `json:"load_ledger_path,omitempty"`
 }
 
+type agentPreflightResult struct {
+	SchemaVersion string                `json:"schema_version"`
+	Status        string                `json:"status"`
+	CreatedAt     string                `json:"created_at"`
+	AgentID       string                `json:"agent_id"`
+	WorkDir       string                `json:"workdir"`
+	OutDir        string                `json:"out_dir,omitempty"`
+	Checks        []agentPreflightCheck `json:"checks"`
+}
+
+type agentPreflightCheck struct {
+	Name     string `json:"name"`
+	Status   string `json:"status"`
+	Required bool   `json:"required"`
+	Detail   string `json:"detail,omitempty"`
+	Error    string `json:"error,omitempty"`
+}
+
 func runAgent(args []string) int {
 	if len(args) == 0 {
 		printAgentUsage()
@@ -158,6 +176,8 @@ func runAgent(args []string) int {
 	case "-h", "--help", "help":
 		printAgentUsage()
 		return 0
+	case "preflight":
+		return runAgentPreflight(args[1:])
 	case "plan":
 		return runAgentPlan(args[1:])
 	case "apply":
@@ -198,6 +218,316 @@ func addAgentCommonFlags(fs *flag.FlagSet) agentCommonFlags {
 	flags.probe = addRuntimeProbeFlags(fs)
 	flags.policy = addRuntimePolicyFlags(fs)
 	return flags
+}
+
+func runAgentPreflight(args []string) int {
+	fs := flag.NewFlagSet("agent preflight", flag.ContinueOnError)
+	fs.SetOutput(os.Stderr)
+	workDir := fs.String("workdir", ".bpfcompat", "Working directory root")
+	outDir := fs.String("out-dir", "artifacts/agent-selected", "Directory where selected artifacts are written")
+	apiURL := fs.String("api-url", "", "Control-plane base URL to validate when provided")
+	tenant := fs.String("tenant", "", "Cloud registry tenant to validate when provided")
+	project := fs.String("project", "", "Cloud registry project to validate when provided")
+	artifactName := fs.String("artifact-name", "", "Artifact family name to validate when provided")
+	agentID := fs.String("agent-id", "", "Stable agent identity label (defaults to hostname)")
+	registryToken := fs.String("registry-token", "", "Registry bearer token (or BPFCOMPAT_AGENT_REGISTRY_TOKEN)")
+	loadPolicyPath := fs.String("load-policy", strings.TrimSpace(os.Getenv(agentLoadPolicyPathEnv)), "Local agent load policy path for reviewed host-load preflight")
+	requireLoadPolicy := fs.Bool("require-load-policy", boolEnvDefault(agentRequireLoadPolicyEnv, true), "Require a local load policy when --include-load is set")
+	validatorPath := fs.String("validator", "", "Validator binary override path for reviewed host-load preflight")
+	includeLoad := fs.Bool("include-load", false, "Also verify reviewed host-load prerequisites")
+	requireConfig := fs.Bool("require-config", false, "Require api-url, tenant, project, artifact-name, and registry token")
+	checkHostProbe := fs.Bool("check-host-probe", true, "Probe host capabilities during preflight")
+	asJSON := fs.Bool("json", false, "Print preflight as JSON")
+	outPath := fs.String("out", "", "Write preflight JSON to file (optional)")
+	probeFlags := addRuntimeProbeFlags(fs)
+	fs.Usage = func() {
+		fmt.Fprintf(fs.Output(), "Usage:\n  bpfcompat agent preflight [--workdir DIR --out-dir DIR] [--include-load --load-policy path] [flags]\n\n")
+		fs.PrintDefaults()
+	}
+	if err := fs.Parse(args); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return 0
+		}
+		return runner.ExitToolError
+	}
+
+	result := buildAgentPreflight(agentPreflightOptions{
+		WorkDir:           *workDir,
+		OutDir:            *outDir,
+		APIURL:            *apiURL,
+		Tenant:            *tenant,
+		Project:           *project,
+		ArtifactName:      *artifactName,
+		AgentID:           *agentID,
+		RegistryToken:     agentRegistryToken(*registryToken),
+		LoadPolicyPath:    *loadPolicyPath,
+		RequireLoadPolicy: *requireLoadPolicy,
+		ValidatorPath:     *validatorPath,
+		IncludeLoad:       *includeLoad,
+		RequireConfig:     *requireConfig,
+		CheckHostProbe:    *checkHostProbe,
+		ProbeOptions:      probeFlags.BuildProbeOptions(),
+	})
+	if strings.TrimSpace(*outPath) != "" {
+		if err := writeAgentJSONFile(*outPath, result); err != nil {
+			fmt.Fprintf(os.Stderr, "write agent preflight: %v\n", err)
+			return runner.ExitToolError
+		}
+	}
+	if *asJSON {
+		if err := writeAgentJSON("", result); err != nil {
+			fmt.Fprintf(os.Stderr, "write agent preflight: %v\n", err)
+			return runner.ExitToolError
+		}
+	} else {
+		printAgentPreflight(result)
+	}
+	if result.Status != "pass" {
+		return runner.ExitToolError
+	}
+	return runner.ExitSuccess
+}
+
+type agentPreflightOptions struct {
+	WorkDir           string
+	OutDir            string
+	APIURL            string
+	Tenant            string
+	Project           string
+	ArtifactName      string
+	AgentID           string
+	RegistryToken     string
+	LoadPolicyPath    string
+	RequireLoadPolicy bool
+	ValidatorPath     string
+	IncludeLoad       bool
+	RequireConfig     bool
+	CheckHostProbe    bool
+	ProbeOptions      runtime.ProbeOptions
+}
+
+func buildAgentPreflight(opts agentPreflightOptions) agentPreflightResult {
+	workDir := strings.TrimSpace(opts.WorkDir)
+	if workDir == "" {
+		workDir = ".bpfcompat"
+	}
+	outDir := strings.TrimSpace(opts.OutDir)
+	if outDir == "" {
+		outDir = "artifacts/agent-selected"
+	}
+	result := agentPreflightResult{
+		SchemaVersion: "agent_preflight.v0.1",
+		Status:        "pass",
+		CreatedAt:     time.Now().UTC().Format(time.RFC3339),
+		AgentID:       resolveAgentID(opts.AgentID),
+		WorkDir:       filepath.Clean(workDir),
+		OutDir:        filepath.Clean(outDir),
+	}
+	add := func(check agentPreflightCheck) {
+		if check.Status == "" {
+			check.Status = "pass"
+		}
+		result.Checks = append(result.Checks, check)
+		if check.Required && check.Status != "pass" {
+			result.Status = "fail"
+		}
+	}
+
+	add(agentPreflightCheck{
+		Name:     "agent_identity",
+		Status:   "pass",
+		Required: true,
+		Detail:   result.AgentID,
+	})
+
+	if err := checkWritableDirectory(workDir); err != nil {
+		add(agentPreflightCheck{Name: "workdir_writable", Status: "fail", Required: true, Detail: filepath.Clean(workDir), Error: err.Error()})
+	} else {
+		add(agentPreflightCheck{Name: "workdir_writable", Status: "pass", Required: true, Detail: filepath.Clean(workDir)})
+	}
+	if err := checkWritableDirectory(outDir); err != nil {
+		add(agentPreflightCheck{Name: "out_dir_writable", Status: "fail", Required: true, Detail: filepath.Clean(outDir), Error: err.Error()})
+	} else {
+		add(agentPreflightCheck{Name: "out_dir_writable", Status: "pass", Required: true, Detail: filepath.Clean(outDir)})
+	}
+
+	checkAgentConfigPreflight(opts, add)
+
+	if opts.CheckHostProbe {
+		probe, err := runtime.ProbeHostCapabilitiesWithOptions(opts.ProbeOptions)
+		if err != nil {
+			add(agentPreflightCheck{Name: "host_probe", Status: "fail", Required: true, Error: err.Error()})
+		} else {
+			add(agentPreflightCheck{Name: "host_probe", Status: "pass", Required: true, Detail: runtime.HostProfileHint(probe)})
+		}
+	} else {
+		add(agentPreflightCheck{Name: "host_probe", Status: "skip", Required: false, Detail: "disabled by --check-host-probe=false"})
+	}
+
+	loadPolicyPath := strings.TrimSpace(opts.LoadPolicyPath)
+	switch {
+	case opts.IncludeLoad && opts.RequireLoadPolicy && loadPolicyPath == "":
+		add(agentPreflightCheck{Name: "load_policy", Status: "fail", Required: true, Error: "--load-policy is required when --include-load is set"})
+	case loadPolicyPath != "":
+		policy, err := agent.LoadLoadPolicy(loadPolicyPath)
+		if err != nil {
+			add(agentPreflightCheck{Name: "load_policy", Status: "fail", Required: opts.IncludeLoad, Detail: filepath.Clean(loadPolicyPath), Error: err.Error()})
+		} else {
+			add(agentPreflightCheck{Name: "load_policy", Status: "pass", Required: opts.IncludeLoad, Detail: fmt.Sprintf("%s default=%s rules=%d", filepath.Clean(loadPolicyPath), policy.DefaultAction, len(policy.Rules))})
+		}
+	default:
+		add(agentPreflightCheck{Name: "load_policy", Status: "skip", Required: false, Detail: "not required for fetch-only preflight"})
+	}
+
+	if opts.IncludeLoad || strings.TrimSpace(opts.ValidatorPath) != "" || strings.TrimSpace(os.Getenv("BPFCOMPAT_VALIDATOR_BIN")) != "" {
+		path, err := resolveAgentValidatorBinary(opts.ValidatorPath)
+		if err != nil {
+			add(agentPreflightCheck{Name: "validator_binary", Status: "fail", Required: opts.IncludeLoad, Error: err.Error()})
+		} else {
+			add(agentPreflightCheck{Name: "validator_binary", Status: "pass", Required: opts.IncludeLoad, Detail: path})
+		}
+	} else {
+		add(agentPreflightCheck{Name: "validator_binary", Status: "skip", Required: false, Detail: "not required for fetch-only preflight"})
+	}
+
+	return result
+}
+
+func checkAgentConfigPreflight(opts agentPreflightOptions, add func(agentPreflightCheck)) {
+	required := opts.RequireConfig
+	var errorsOut []string
+	apiURL := strings.TrimSpace(opts.APIURL)
+	if apiURL != "" {
+		if _, err := resolveAgentEndpoint(apiURL); err != nil {
+			errorsOut = append(errorsOut, err.Error())
+		}
+	} else if required {
+		errorsOut = append(errorsOut, "--api-url is required")
+	}
+	tenant := strings.TrimSpace(opts.Tenant)
+	project := strings.TrimSpace(opts.Project)
+	switch {
+	case tenant == "" && project == "":
+		if required {
+			errorsOut = append(errorsOut, "--tenant and --project are required")
+		}
+	case tenant == "" || project == "":
+		errorsOut = append(errorsOut, "--tenant and --project must be provided together")
+	}
+	if strings.TrimSpace(opts.ArtifactName) == "" && required {
+		errorsOut = append(errorsOut, "--artifact-name is required")
+	}
+	if strings.TrimSpace(opts.RegistryToken) == "" && required {
+		errorsOut = append(errorsOut, "registry token is required; set --registry-token or "+agentRegistryTokenEnv)
+	}
+	if len(errorsOut) > 0 {
+		add(agentPreflightCheck{Name: "agent_config", Status: "fail", Required: required, Error: strings.Join(errorsOut, "; ")})
+		return
+	}
+	details := []string{}
+	if apiURL != "" {
+		details = append(details, "api_url="+apiURL)
+	}
+	if tenant != "" || project != "" {
+		details = append(details, "project="+tenant+"/"+project)
+	}
+	if strings.TrimSpace(opts.ArtifactName) != "" {
+		details = append(details, "artifact="+strings.TrimSpace(opts.ArtifactName))
+	}
+	if strings.TrimSpace(opts.RegistryToken) != "" {
+		details = append(details, "registry_token=configured")
+	}
+	if len(details) == 0 {
+		details = append(details, "not required")
+	}
+	add(agentPreflightCheck{Name: "agent_config", Status: "pass", Required: required, Detail: strings.Join(details, " ")})
+}
+
+func checkWritableDirectory(path string) error {
+	cleanPath := filepath.Clean(strings.TrimSpace(path))
+	if cleanPath == "" {
+		return fmt.Errorf("directory path is empty")
+	}
+	if err := os.MkdirAll(cleanPath, 0o755); err != nil {
+		return fmt.Errorf("create directory: %w", err)
+	}
+	f, err := os.CreateTemp(cleanPath, ".bpfcompat-preflight-*")
+	if err != nil {
+		return fmt.Errorf("create probe file: %w", err)
+	}
+	name := f.Name()
+	if _, err := f.Write([]byte("ok\n")); err != nil {
+		_ = f.Close()
+		_ = os.Remove(name)
+		return fmt.Errorf("write probe file: %w", err)
+	}
+	if err := f.Close(); err != nil {
+		_ = os.Remove(name)
+		return fmt.Errorf("close probe file: %w", err)
+	}
+	if err := os.Remove(name); err != nil {
+		return fmt.Errorf("remove probe file: %w", err)
+	}
+	return nil
+}
+
+func resolveAgentValidatorBinary(pathText string) (string, error) {
+	candidates := []string{}
+	if strings.TrimSpace(pathText) != "" {
+		candidates = append(candidates, strings.TrimSpace(pathText))
+	}
+	if envPath := strings.TrimSpace(os.Getenv("BPFCOMPAT_VALIDATOR_BIN")); envPath != "" {
+		candidates = append(candidates, envPath)
+	}
+	candidates = append(candidates,
+		"/usr/libexec/bpfcompat/bpfcompat-validator",
+		"/usr/local/libexec/bpfcompat/bpfcompat-validator",
+		"validator/c-libbpf/bin/bpfcompat-validator",
+	)
+	var lastErr error
+	for _, candidate := range candidates {
+		resolved, err := filepath.Abs(filepath.Clean(candidate))
+		if err != nil {
+			lastErr = err
+			continue
+		}
+		info, err := os.Stat(resolved)
+		if err != nil {
+			lastErr = err
+			continue
+		}
+		if info.IsDir() {
+			lastErr = fmt.Errorf("%s is a directory", resolved)
+			continue
+		}
+		if info.Mode()&0o111 == 0 {
+			lastErr = fmt.Errorf("%s is not executable", resolved)
+			continue
+		}
+		return resolved, nil
+	}
+	if lastErr != nil {
+		return "", fmt.Errorf("validator binary not found or unusable: %w", lastErr)
+	}
+	return "", fmt.Errorf("validator binary not found")
+}
+
+func printAgentPreflight(result agentPreflightResult) {
+	fmt.Printf("Agent preflight: %s agent=%s\n", result.Status, result.AgentID)
+	for _, check := range result.Checks {
+		required := "optional"
+		if check.Required {
+			required = "required"
+		}
+		fmt.Printf("  - %s: %s (%s)", check.Name, check.Status, required)
+		if check.Detail != "" {
+			fmt.Printf(" %s", check.Detail)
+		}
+		if check.Error != "" {
+			fmt.Printf(" error=%s", check.Error)
+		}
+		fmt.Println()
+	}
 }
 
 func runAgentPlan(args []string) int {
@@ -1275,6 +1605,21 @@ func writeAgentJSON(outPath string, payload any) error {
 	return err
 }
 
+func writeAgentJSONFile(outPath string, payload any) error {
+	if strings.TrimSpace(outPath) == "" {
+		return nil
+	}
+	raw, err := json.MarshalIndent(payload, "", "  ")
+	if err != nil {
+		return fmt.Errorf("encode JSON: %w", err)
+	}
+	raw = append(raw, '\n')
+	if err := os.WriteFile(filepath.Clean(outPath), raw, 0o600); err != nil {
+		return fmt.Errorf("write JSON file: %w", err)
+	}
+	return nil
+}
+
 func writeAgentFailureJSON(outPath, phase string, cause error) {
 	if strings.TrimSpace(outPath) == "" || cause == nil {
 		return
@@ -1604,6 +1949,7 @@ func sanitizeAgentFileName(raw string) string {
 
 func printAgentUsage() {
 	fmt.Println("Usage:")
+	fmt.Println("  bpfcompat agent preflight [--workdir DIR --out-dir DIR] [--include-load]")
 	fmt.Println("  bpfcompat agent plan  --artifact-name <name> [--api-url URL --tenant T --project P] [flags]")
 	fmt.Println("  bpfcompat agent apply --artifact-name <name> [--api-url URL --tenant T --project P] [--approve-load] [flags]")
 	fmt.Println("  bpfcompat agent status [--path /var/lib/bpfcompat-agent/last-apply.json] [--json]")

@@ -3,6 +3,7 @@ defaults:
   matrix: ../matrices/dev-one.yaml
   workdir: ../.bpfcompat
   report_dir: ../reports/suites/dev-functional
+  validation_mode: load_attach
   timeout: 8m
   concurrency: 1
 cases:
@@ -16,3 +17,4 @@ cases:
     manifest: ../examples/functional-execve/manifest-dev-one.yaml
     artifact_name: functional_execve
     artifact_variant: event-capture
+    validation_mode: behavior

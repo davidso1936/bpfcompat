@@ -6,6 +6,8 @@ set -euo pipefail
 
 PREFIX="${PREFIX:-/usr/local}"
 BIN_SRC="${BIN_SRC:-./bin/bpfcompat}"
+VALIDATOR_SRC="${VALIDATOR_SRC:-validator/c-libbpf/bin/bpfcompat-validator}"
+VALIDATOR_DEST="${VALIDATOR_DEST:-$PREFIX/libexec/bpfcompat/bpfcompat-validator}"
 AGENT_USER="${AGENT_USER:-bpfcompat-agent}"
 AGENT_GROUP="${AGENT_GROUP:-bpfcompat-agent}"
 ENV_PATH="${ENV_PATH:-/etc/bpfcompat/agent.env}"
@@ -24,6 +26,12 @@ fi
 
 install -d -m 0755 "$PREFIX/bin"
 install -m 0755 "$BIN_SRC" "$PREFIX/bin/bpfcompat"
+if [[ -x "$VALIDATOR_SRC" ]]; then
+  install -d -m 0755 "$(dirname "$VALIDATOR_DEST")"
+  install -m 0755 "$VALIDATOR_SRC" "$VALIDATOR_DEST"
+else
+  echo "warning: validator binary not installed; reviewed host-load preflight will fail until VALIDATOR_SRC points to bpfcompat-validator" >&2
+fi
 
 if ! getent group "$AGENT_GROUP" >/dev/null; then
   groupadd --system "$AGENT_GROUP"
@@ -60,10 +68,12 @@ Installed bpfcompat agent alpha units.
 
 Next:
   1. Edit $ENV_PATH
-  2. Run a single fetch-only check:
+  2. Run preflight:
+       sudo -u $AGENT_USER $PREFIX/bin/bpfcompat agent preflight --workdir /var/lib/bpfcompat-agent --out-dir /var/lib/bpfcompat-agent/selected --check-host-probe=false
+  3. Run a single fetch-only check:
        systemctl start bpfcompat-agent.service
        journalctl -u bpfcompat-agent.service -n 80 --no-pager
-  3. Enable scheduled checks:
+  4. Enable scheduled checks:
        systemctl enable --now bpfcompat-agent.timer
 
 Reviewed host loading is separate and disabled by default:

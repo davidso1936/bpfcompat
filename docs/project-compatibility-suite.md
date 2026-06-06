@@ -31,6 +31,7 @@ defaults:
   matrix: ../matrices/dev-one.yaml
   workdir: ../.bpfcompat
   report_dir: ../reports/suites/my-bpf-suite
+  validation_mode: load_attach
   timeout: 8m
   concurrency: 1
 cases:
@@ -42,6 +43,19 @@ cases:
     artifact: ../build/network_xdp.bpf.o
     manifest: ../manifests/network_xdp.yaml
     artifact_name: network_xdp
+    validation_mode: load_only
+  - name: exec-behavior
+    artifact: ../build/exec_tracepoint.bpf.o
+    manifest: ../manifests/exec_tracepoint.yaml
+    artifact_name: exec_tracepoint
+    validation_mode: behavior
+    test:
+      mode: behavior
+      command: ./scripts/smoke-exec.sh
+      timeout: 30s
+      expect:
+        exit_code: 0
+        stdout_contains: saw-execve
 ```
 
 Each case supports the same core inputs as `bpfcompat test`:
@@ -57,9 +71,42 @@ Each case supports the same core inputs as `bpfcompat test`:
 - `markdown`
 - `workdir`
 - `runner`
+- `validation_mode`
 - `timeout`
 - `concurrency`
 - `keep_vm_on_failure`
+
+`validation_mode` controls what each case proves:
+
+- `load_only`: run libbpf load/verifier checks and skip attach and behavior
+  commands. This is useful for fast kernel compatibility screening.
+- `load_attach`: run load plus attach checks. This is the default suite/web
+  gate behavior for most artifacts.
+- `behavior`: run load, attach, and functional commands while the BPF links are
+  alive. This is the closest match for Falco-style event/smoke assertions.
+
+Behavior commands can be declared in a manifest using `functional_tests`, or
+inline in the suite with a `test` block. The inline block is converted into a
+generated manifest before the runner starts:
+
+```yaml
+cases:
+  - name: exec-behavior
+    artifact: ../build/exec_tracepoint.bpf.o
+    manifest: ../manifests/exec_tracepoint.yaml
+    test:
+      mode: behavior
+      command: ./scripts/smoke-exec.sh
+      expect:
+        exit_code: 0
+        stdout_contains: saw-execve
+```
+
+Suite JSON includes per-case target verdicts, and suite Markdown includes both
+the case summary and a collection matrix. The matrix is intentionally
+high-level: it shows which artifact case passed or failed on each target first,
+then links to the per-artifact reports for verifier logs, BTF/CO-RE state,
+attach evidence, and behavior-test output.
 
 ## GitHub Action
 

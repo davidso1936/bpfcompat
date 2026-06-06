@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -38,6 +39,7 @@ type Config struct {
 	ArtifactName          string
 	ArtifactVersion       string
 	ArtifactVariant       string
+	ValidationMode        string
 	MatrixPath            string
 	ManifestPath          string
 	OutPath               string
@@ -58,6 +60,27 @@ const (
 	RunnerHost        = "host"
 )
 
+const (
+	ValidationModeDefault    = ""
+	ValidationModeLoadOnly   = "load_only"
+	ValidationModeLoadAttach = "load_attach"
+	ValidationModeBehavior   = "behavior"
+)
+
+func NormalizeValidationMode(mode string) string {
+	mode = strings.ToLower(strings.TrimSpace(mode))
+	switch mode {
+	case ValidationModeLoadOnly, "load-only", "loadonly":
+		return ValidationModeLoadOnly
+	case ValidationModeLoadAttach, "load-attach", "loadattach":
+		return ValidationModeLoadAttach
+	case ValidationModeBehavior:
+		return ValidationModeBehavior
+	default:
+		return ValidationModeDefault
+	}
+}
+
 func (c Config) Validate() error {
 	if c.ArtifactPath == "" {
 		return errors.New("--artifact is required")
@@ -76,6 +99,9 @@ func (c Config) Validate() error {
 	}
 	if c.WorkDir == "" {
 		return errors.New("--workdir cannot be empty")
+	}
+	if normalizedMode := NormalizeValidationMode(c.ValidationMode); normalizedMode == ValidationModeDefault && strings.TrimSpace(c.ValidationMode) != "" {
+		return fmt.Errorf("--validation-mode must be one of %q, %q, or %q (got %q)", ValidationModeLoadOnly, ValidationModeLoadAttach, ValidationModeBehavior, c.ValidationMode)
 	}
 
 	runner := c.Runner

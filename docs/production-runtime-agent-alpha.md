@@ -36,6 +36,46 @@ Required values:
 - `BPFCOMPAT_AGENT_ARTIFACT_NAME`
 - `BPFCOMPAT_AGENT_REGISTRY_TOKEN`
 
+## Preflight
+
+Run preflight before enabling the timer:
+
+```bash
+sudo -u bpfcompat-agent /usr/local/bin/bpfcompat agent preflight \
+  --api-url "$BPFCOMPAT_AGENT_API_URL" \
+  --tenant "$BPFCOMPAT_AGENT_TENANT" \
+  --project "$BPFCOMPAT_AGENT_PROJECT" \
+  --artifact-name "$BPFCOMPAT_AGENT_ARTIFACT_NAME" \
+  --workdir /var/lib/bpfcompat-agent \
+  --out-dir /var/lib/bpfcompat-agent/selected \
+  --require-config=true \
+  --probe-use-sudo=false
+```
+
+The fetch-only preflight checks:
+
+- resolved agent identity
+- writable workdir and selected-artifact directory
+- control-plane configuration shape
+- registry token presence when `--require-config=true`
+- host probe readiness
+
+Reviewed host loading has a stricter preflight:
+
+```bash
+sudo /usr/local/bin/bpfcompat agent preflight \
+  --workdir /var/lib/bpfcompat-agent \
+  --out-dir /var/lib/bpfcompat-agent/selected \
+  --include-load \
+  --load-policy /etc/bpfcompat/agent-load-policy.yaml \
+  --probe-use-sudo=false
+```
+
+With `--include-load`, preflight also requires a valid local load policy and a
+usable `bpfcompat-validator` binary in the runtime search path. The installer
+copies the validator to `/usr/local/libexec/bpfcompat/bpfcompat-validator` when
+`validator/c-libbpf/bin/bpfcompat-validator` exists.
+
 ## Run Once
 
 ```bash
@@ -105,6 +145,12 @@ sudo cp /etc/bpfcompat/agent-load-policy.example.yaml \
   /etc/bpfcompat/agent-load-policy.yaml
 sudo editor /etc/bpfcompat/agent-load-policy.yaml
 sudo editor /etc/bpfcompat/agent-load.env
+sudo /usr/local/bin/bpfcompat agent preflight \
+  --workdir /var/lib/bpfcompat-agent \
+  --out-dir /var/lib/bpfcompat-agent/selected \
+  --include-load \
+  --load-policy /etc/bpfcompat/agent-load-policy.yaml \
+  --probe-use-sudo=false
 sudo systemctl start bpfcompat-agent-load.service
 sudo /usr/local/bin/bpfcompat agent status \
   --path /var/lib/bpfcompat-agent/last-load.json

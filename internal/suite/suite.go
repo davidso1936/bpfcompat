@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	manifestpkg "github.com/kernel-guard/bpfcompat/internal/manifest"
 	"github.com/kernel-guard/bpfcompat/internal/runner"
 	"github.com/kernel-guard/bpfcompat/pkg/schema"
 
@@ -42,6 +43,7 @@ type Defaults struct {
 	WorkDir         string `yaml:"workdir,omitempty"`
 	ReportDir       string `yaml:"report_dir,omitempty"`
 	Runner          string `yaml:"runner,omitempty"`
+	ValidationMode  string `yaml:"validation_mode,omitempty"`
 	Timeout         string `yaml:"timeout,omitempty"`
 	Concurrency     int    `yaml:"concurrency,omitempty"`
 	KeepVMOnFailure bool   `yaml:"keep_vm_on_failure,omitempty"`
@@ -56,6 +58,8 @@ type Case struct {
 	ArtifactVariant string `yaml:"artifact_variant,omitempty"`
 	Matrix          string `yaml:"matrix,omitempty"`
 	Manifest        string `yaml:"manifest,omitempty"`
+	ValidationMode  string `yaml:"validation_mode,omitempty"`
+	Test            *Test  `yaml:"test,omitempty"`
 	Out             string `yaml:"out,omitempty"`
 	Markdown        string `yaml:"markdown,omitempty"`
 	WorkDir         string `yaml:"workdir,omitempty"`
@@ -63,6 +67,21 @@ type Case struct {
 	Timeout         string `yaml:"timeout,omitempty"`
 	Concurrency     int    `yaml:"concurrency,omitempty"`
 	KeepVMOnFailure *bool  `yaml:"keep_vm_on_failure,omitempty"`
+}
+
+type Test struct {
+	Mode     string `yaml:"mode,omitempty"`
+	Command  string `yaml:"command,omitempty"`
+	Required *bool  `yaml:"required,omitempty"`
+	Timeout  string `yaml:"timeout,omitempty"`
+	Expect   Expect `yaml:"expect,omitempty"`
+}
+
+type Expect struct {
+	ExitCode       *int   `yaml:"exit_code,omitempty"`
+	StdoutContains string `yaml:"stdout_contains,omitempty"`
+	StderrContains string `yaml:"stderr_contains,omitempty"`
+	EventContains  string `yaml:"event_contains,omitempty"`
 }
 
 type RunOptions struct {
@@ -88,19 +107,31 @@ type Summary struct {
 }
 
 type CaseSummary struct {
-	Name               string `json:"name"`
-	Artifact           string `json:"artifact"`
-	Manifest           string `json:"manifest,omitempty"`
-	Matrix             string `json:"matrix"`
+	Name               string              `json:"name"`
+	Artifact           string              `json:"artifact"`
+	Manifest           string              `json:"manifest,omitempty"`
+	Matrix             string              `json:"matrix"`
+	Status             string              `json:"status"`
+	ExitCode           int                 `json:"exit_code"`
+	Error              string              `json:"error,omitempty"`
+	RunID              string              `json:"run_id,omitempty"`
+	ReportJSONPath     string              `json:"report_json_path,omitempty"`
+	ReportMarkdownPath string              `json:"report_markdown_path,omitempty"`
+	TotalProfiles      int                 `json:"total_profiles"`
+	RequiredPassed     int                 `json:"required_passed"`
+	RequiredFailed     int                 `json:"required_failed"`
+	ValidationMode     string              `json:"validation_mode,omitempty"`
+	BehaviorStatus     string              `json:"behavior_status,omitempty"`
+	BehaviorPassed     int                 `json:"behavior_passed,omitempty"`
+	BehaviorFailed     int                 `json:"behavior_failed,omitempty"`
+	Targets            []CaseTargetSummary `json:"targets,omitempty"`
+}
+
+type CaseTargetSummary struct {
+	ProfileID          string `json:"profile_id"`
 	Status             string `json:"status"`
-	ExitCode           int    `json:"exit_code"`
-	Error              string `json:"error,omitempty"`
-	RunID              string `json:"run_id,omitempty"`
-	ReportJSONPath     string `json:"report_json_path,omitempty"`
-	ReportMarkdownPath string `json:"report_markdown_path,omitempty"`
-	TotalProfiles      int    `json:"total_profiles"`
-	RequiredPassed     int    `json:"required_passed"`
-	RequiredFailed     int    `json:"required_failed"`
+	Required           bool   `json:"required"`
+	ClassificationCode string `json:"classification_code,omitempty"`
 }
 
 func Load(path string) (Spec, error) {
@@ -145,6 +176,9 @@ func Validate(spec Spec) error {
 	if spec.Defaults.Concurrency < 0 {
 		return errors.New("defaults.concurrency must be >= 0")
 	}
+	if err := validateValidationMode("defaults.validation_mode", spec.Defaults.ValidationMode); err != nil {
+		return err
+	}
 
 	seen := make(map[string]struct{}, len(spec.Cases))
 	for i := range spec.Cases {
@@ -174,6 +208,14 @@ func Validate(spec Spec) error {
 		}
 		if c.Concurrency < 0 {
 			return fmt.Errorf("cases[%d].concurrency must be >= 0", i)
+		}
+		if err := validateValidationMode(fmt.Sprintf("cases[%d].validation_mode", i), c.ValidationMode); err != nil {
+			return err
+		}
+		if c.Test != nil {
+			if err := validateCaseTest(fmt.Sprintf("cases[%d].test", i), *c.Test); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -271,6 +313,16 @@ func buildRunnerConfig(baseDir string, spec Spec, c Case, opts RunOptions) (runn
 	caseName := strings.TrimSpace(c.Name)
 	outPath := firstNonEmpty(c.Out, filepath.Join(reportDir, caseName+".json"))
 	markdownPath := firstNonEmpty(c.Markdown, filepath.Join(reportDir, caseName+".md"))
+	manifestPath := resolveOptionalSuitePath(baseDir, c.Manifest)
+	validationMode := runner.NormalizeValidationMode(firstNonEmpty(c.ValidationMode, spec.Defaults.ValidationMode))
+	if c.Test != nil {
+		validationMode = runner.ValidationModeBehavior
+		var err error
+		manifestPath, err = writeBehaviorManifest(reportDir, caseName, manifestPath, *c.Test)
+		if err != nil {
+			return runner.Config{}, CaseSummary{Name: caseName}, err
+		}
+	}
 
 	timeout, err := resolveTimeout(c.Timeout, spec.Defaults.Timeout, opts.Timeout)
 	if err != nil {
@@ -288,8 +340,9 @@ func buildRunnerConfig(baseDir string, spec Spec, c Case, opts RunOptions) (runn
 		ArtifactName:          strings.TrimSpace(c.ArtifactName),
 		ArtifactVersion:       strings.TrimSpace(c.ArtifactVersion),
 		ArtifactVariant:       strings.TrimSpace(c.ArtifactVariant),
+		ValidationMode:        validationMode,
 		MatrixPath:            resolveSuitePath(baseDir, firstNonEmpty(c.Matrix, spec.Defaults.Matrix)),
-		ManifestPath:          resolveOptionalSuitePath(baseDir, c.Manifest),
+		ManifestPath:          manifestPath,
 		OutPath:               resolveSuitePath(baseDir, outPath),
 		MarkdownPath:          resolveOptionalSuitePath(baseDir, markdownPath),
 		WorkDir:               resolveSuitePath(baseDir, firstNonEmpty(opts.WorkDir, c.WorkDir, spec.Defaults.WorkDir, defaultWorkDir)),
@@ -307,6 +360,7 @@ func buildRunnerConfig(baseDir string, spec Spec, c Case, opts RunOptions) (runn
 		Matrix:             cfg.MatrixPath,
 		ReportJSONPath:     cfg.OutPath,
 		ReportMarkdownPath: cfg.MarkdownPath,
+		ValidationMode:     cfg.ValidationMode,
 	}
 	if err := cfg.Validate(); err != nil {
 		return runner.Config{}, caseSummary, err
@@ -322,7 +376,55 @@ func caseSummaryFromRun(base CaseSummary, result runner.RunResult) CaseSummary {
 	base.ReportMarkdownPath = result.Report.Paths.Markdown
 	base.TotalProfiles = len(result.Report.Targets)
 	base.RequiredPassed, base.RequiredFailed = requiredCounts(result.Report)
+	base.BehaviorStatus, base.BehaviorPassed, base.BehaviorFailed = behaviorCounts(result.Report)
+	base.Targets = targetSummaries(result.Report)
 	return base
+}
+
+func writeBehaviorManifest(reportDir, caseName, manifestPath string, test Test) (string, error) {
+	mf := manifestpkg.Manifest{Name: caseName}
+	if strings.TrimSpace(manifestPath) != "" {
+		loaded, err := manifestpkg.Load(manifestPath)
+		if err != nil {
+			return "", fmt.Errorf("load behavior base manifest: %w", err)
+		}
+		mf = loaded
+		if strings.TrimSpace(mf.Name) == "" {
+			mf.Name = caseName
+		}
+	}
+	mf.FunctionalTests = append(mf.FunctionalTests, functionalTestFromCaseTest(caseName+"-behavior", test))
+	if err := manifestpkg.Validate(mf); err != nil {
+		return "", fmt.Errorf("validate generated behavior manifest: %w", err)
+	}
+	if err := os.MkdirAll(reportDir, 0o755); err != nil {
+		return "", fmt.Errorf("create behavior manifest directory: %w", err)
+	}
+	outPath := filepath.Join(reportDir, caseName+".behavior-manifest.yaml")
+	raw, err := yaml.Marshal(mf)
+	if err != nil {
+		return "", fmt.Errorf("marshal generated behavior manifest: %w", err)
+	}
+	if err := os.WriteFile(outPath, raw, 0o600); err != nil {
+		return "", fmt.Errorf("write generated behavior manifest: %w", err)
+	}
+	return outPath, nil
+}
+
+func functionalTestFromCaseTest(name string, test Test) manifestpkg.FunctionalTest {
+	stdoutContains := strings.TrimSpace(test.Expect.StdoutContains)
+	if stdoutContains == "" {
+		stdoutContains = strings.TrimSpace(test.Expect.EventContains)
+	}
+	return manifestpkg.FunctionalTest{
+		Name:                 name,
+		Command:              strings.TrimSpace(test.Command),
+		Required:             test.Required,
+		Timeout:              strings.TrimSpace(test.Timeout),
+		ExpectExitCode:       test.Expect.ExitCode,
+		ExpectStdoutContains: stdoutContains,
+		ExpectStderrContains: strings.TrimSpace(test.Expect.StderrContains),
+	}
 }
 
 func requiredCounts(report schema.ReportV01) (int, int) {
@@ -340,6 +442,50 @@ func requiredCounts(report schema.ReportV01) (int, int) {
 		}
 	}
 	return passed, failed
+}
+
+func behaviorCounts(report schema.ReportV01) (status string, passed, failed int) {
+	seen := false
+	for i := range report.Targets {
+		fn := report.Targets[i].Functional
+		if fn == nil || len(fn.Tests) == 0 {
+			continue
+		}
+		seen = true
+		for j := range fn.Tests {
+			switch strings.ToLower(strings.TrimSpace(fn.Tests[j].Status)) {
+			case "pass":
+				passed++
+			case "skipped", "":
+			default:
+				failed++
+			}
+		}
+	}
+	if !seen {
+		return "", 0, 0
+	}
+	if failed > 0 {
+		return "fail", passed, failed
+	}
+	return "pass", passed, 0
+}
+
+func targetSummaries(report schema.ReportV01) []CaseTargetSummary {
+	if len(report.Targets) == 0 {
+		return nil
+	}
+	targets := make([]CaseTargetSummary, 0, len(report.Targets))
+	for i := range report.Targets {
+		target := &report.Targets[i]
+		targets = append(targets, CaseTargetSummary{
+			ProfileID:          target.ProfileID,
+			Status:             strings.ToLower(strings.TrimSpace(target.Status)),
+			Required:           target.Required,
+			ClassificationCode: strings.TrimSpace(target.ClassificationCode),
+		})
+	}
+	return targets
 }
 
 func updateSuiteStatus(summary *Summary, exitCode int) {
@@ -404,24 +550,121 @@ func RenderMarkdown(summary Summary) string {
 		b.WriteString(fmt.Sprintf("- Finished: `%s`\n", markdownCell(summary.FinishedAt)))
 	}
 	b.WriteString("\n## Cases\n\n")
-	b.WriteString("| Case | Status | Required pass/fail | Profiles | Report |\n")
-	b.WriteString("|---|---|---:|---:|---|\n")
+	b.WriteString("| Case | Mode | Status | Required pass/fail | Behavior | Profiles | Report |\n")
+	b.WriteString("|---|---|---|---:|---:|---:|---|\n")
 	for i := range summary.Cases {
 		c := &summary.Cases[i]
 		reportPath := firstNonEmpty(c.ReportMarkdownPath, c.ReportJSONPath, "-")
-		b.WriteString(fmt.Sprintf("| `%s` | `%s` | %d/%d | %d | `%s` |\n",
+		mode := c.ValidationMode
+		if mode == "" {
+			mode = "default"
+		}
+		behavior := "-"
+		if c.BehaviorStatus != "" {
+			behavior = fmt.Sprintf("%s %d/%d", c.BehaviorStatus, c.BehaviorPassed, c.BehaviorFailed)
+		}
+		b.WriteString(fmt.Sprintf("| `%s` | `%s` | `%s` | %d/%d | `%s` | %d | `%s` |\n",
 			markdownCell(c.Name),
+			markdownCell(mode),
 			markdownCell(c.Status),
 			c.RequiredPassed,
 			c.RequiredFailed,
+			markdownCell(behavior),
 			c.TotalProfiles,
 			markdownCell(reportPath),
 		))
 		if c.Error != "" {
-			b.WriteString(fmt.Sprintf("| `%s` error |  |  |  | %s |\n", markdownCell(c.Name), markdownCell(c.Error)))
+			b.WriteString(fmt.Sprintf("| `%s` error |  |  |  |  |  | %s |\n", markdownCell(c.Name), markdownCell(c.Error)))
 		}
 	}
+	writeCollectionMatrix(&b, summary)
 	return b.String()
+}
+
+func writeCollectionMatrix(b *strings.Builder, summary Summary) {
+	profiles := make([]string, 0)
+	profileSeen := make(map[string]struct{})
+	caseTargets := make(map[string]map[string]CaseTargetSummary)
+	for i := range summary.Cases {
+		c := &summary.Cases[i]
+		if len(c.Targets) == 0 {
+			continue
+		}
+		perCase := make(map[string]CaseTargetSummary, len(c.Targets))
+		for j := range c.Targets {
+			target := c.Targets[j]
+			if target.ProfileID == "" {
+				continue
+			}
+			perCase[target.ProfileID] = target
+			if _, ok := profileSeen[target.ProfileID]; !ok {
+				profileSeen[target.ProfileID] = struct{}{}
+				profiles = append(profiles, target.ProfileID)
+			}
+		}
+		caseTargets[c.Name] = perCase
+	}
+	if len(profiles) == 0 {
+		return
+	}
+
+	b.WriteString("\n## Collection Matrix\n\n")
+	b.WriteString("| Profile |")
+	for i := range summary.Cases {
+		fmt.Fprintf(b, " `%s` |", markdownCell(summary.Cases[i].Name))
+	}
+	b.WriteString("\n|---|")
+	for range summary.Cases {
+		b.WriteString("---|")
+	}
+	b.WriteString("\n")
+	for _, profile := range profiles {
+		fmt.Fprintf(b, "| `%s` |", markdownCell(profile))
+		for i := range summary.Cases {
+			c := &summary.Cases[i]
+			cell := "-"
+			if target, ok := caseTargets[c.Name][profile]; ok {
+				cell = target.Status
+				if target.Required {
+					cell += " required"
+				}
+				if target.ClassificationCode != "" {
+					cell += " " + target.ClassificationCode
+				}
+			}
+			fmt.Fprintf(b, " `%s` |", markdownCell(cell))
+		}
+		b.WriteString("\n")
+	}
+}
+
+func validateValidationMode(label, raw string) error {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return nil
+	}
+	if runner.NormalizeValidationMode(raw) == runner.ValidationModeDefault {
+		return fmt.Errorf("%s must be one of %q, %q, or %q", label, runner.ValidationModeLoadOnly, runner.ValidationModeLoadAttach, runner.ValidationModeBehavior)
+	}
+	return nil
+}
+
+func validateCaseTest(label string, test Test) error {
+	mode := strings.TrimSpace(test.Mode)
+	if mode == "" {
+		return fmt.Errorf("%s.mode is required", label)
+	}
+	if !strings.EqualFold(mode, runner.ValidationModeBehavior) {
+		return fmt.Errorf("%s.mode must be %q", label, runner.ValidationModeBehavior)
+	}
+	ft := functionalTestFromCaseTest("suite-behavior", test)
+	if err := manifestpkg.Validate(manifestpkg.Manifest{
+		Name:            "suite-behavior",
+		FunctionalTests: []manifestpkg.FunctionalTest{ft},
+	}); err != nil {
+		return fmt.Errorf("%s: %w", label, err)
+	}
+	return nil
 }
 
 func validateTimeout(label, raw string) error {

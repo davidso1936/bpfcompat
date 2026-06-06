@@ -30,7 +30,20 @@ only when that drawer is opened.
 For projects that ship collections of BPF objects/programs, use suite mode in
 the CLI or GitHub Action. The web UI previews suite cases, explains the
 recommended CI mode, and generates the GitHub Action YAML, but real collection
-execution remains CI-first.
+execution remains CI-first. Suite cases may choose `validation_mode:
+load_only`, `load_attach`, or `behavior`; behavior mode runs manifest or suite
+`test` commands while the BPF links are alive and reports those results in the
+suite-level matrix.
+
+The public web gate intentionally exposes only the low-risk single-object
+paths:
+
+- **Load only**: verifier/libbpf load evidence without attaching hooks.
+- **Load + attach**: load plus best-effort attach evidence.
+
+Behavior assertions and production runtime loading stay in the lower-level
+CLI/action/agent paths because they need project-specific scripts, host
+capabilities, and operator policy.
 
 ## Start
 
