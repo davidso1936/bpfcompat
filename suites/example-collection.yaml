@@ -1,0 +1,43 @@
+# A realistic BPF collection: two variants of the same exec tracer plus two
+# upstream OSS programs. Individual artifacts pass or fail per kernel — the
+# suite output is the collection-level compatibility matrix.
+#
+# Build the artifacts first:
+#   make examples oss-examples
+# Cache the matrix images:
+#   make vm-images
+name: example-collection
+defaults:
+  matrix: ../matrices/mvp.yaml
+  workdir: ../.bpfcompat
+  report_dir: ../reports/suites/example-collection
+  validation_mode: load_attach
+  timeout: 8m
+  concurrency: 2
+cases:
+  - name: exec-tracer-ringbuf
+    artifact: ../examples/ringbuf-modern/ringbuf_modern.bpf.o
+    manifest: ../examples/ringbuf-modern/manifest.yaml
+    artifact_name: exec-tracer
+    artifact_variant: ringbuf
+  - name: exec-tracer-perfbuf
+    artifact: ../examples/perfbuf-fallback/perfbuf_fallback.bpf.o
+    manifest: ../examples/perfbuf-fallback/manifest.yaml
+    artifact_name: exec-tracer
+    artifact_variant: perfbuf
+  - name: bcc-execsnoop
+    artifact: ../examples/oss/bcc-execsnoop/execsnoop.bpf.o
+    manifest: ../examples/oss/bcc-execsnoop/manifest.yaml
+    artifact_name: bcc-execsnoop
+    artifact_variant: upstream
+  - name: cilium-tracepoint
+    artifact: ../examples/oss/cilium-tracepoint-in-c/tracepoint.bpf.o
+    manifest: ../examples/oss/cilium-tracepoint-in-c/manifest.yaml
+    artifact_name: cilium-tracepoint
+    artifact_variant: upstream
+  - name: exec-event-capture
+    artifact: ../examples/functional-execve/functional_execve.bpf.o
+    manifest: ../examples/functional-execve/manifest-dev-one.yaml
+    artifact_name: exec-event-capture
+    artifact_variant: behavior
+    validation_mode: behavior

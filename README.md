@@ -95,16 +95,39 @@ Validator modes:
 - `make validator` uses dynamic libbpf linking for local development.
 - `make validator-static` builds the guest-side validator used by VM profiles.
 
-## Quickstart
+## Quickstart: a collection across kernels
 
-Download the Ubuntu 22.04 dev image and run one profile:
+Compatibility questions are rarely about one file. A release ships a
+collection of BPF objects, and individual programs load differently across
+kernels — so suites are the primary workflow: artifacts + manifests + a
+kernel matrix in, one collection-level pass/fail matrix out.
+
+Fast first run (one VM profile):
 
 ```bash
+make examples
 make vm-ubuntu-22
-make acceptance-dev-one
+make acceptance-suite-dev-one
 ```
 
-Equivalent direct command:
+Realistic collection across the 8-profile MVP matrix:
+
+```bash
+make examples oss-examples
+make vm-images
+./bin/bpfcompat suite \
+  --suite suites/example-collection.yaml \
+  --out reports/example-collection.json \
+  --markdown reports/example-collection.md
+```
+
+Each case stages its artifact, boots a disposable VM overlay per kernel
+profile, runs the C/libbpf validator inside the guest, and rolls the results
+into a per-artifact × per-kernel matrix with structured failure reasons.
+Exit code `2` means a required profile regressed, so the same command is the
+CI gate.
+
+### Single-artifact mode
 
 ```bash
 ./bin/bpfcompat test \
@@ -116,9 +139,25 @@ Equivalent direct command:
   --timeout 8m
 ```
 
-This stages the artifact, boots a disposable VM overlay, runs the C/libbpf
-validator inside the guest, copies back target logs, and writes aggregate
-reports.
+`make acceptance-dev-one` wraps the same flow.
+
+### Runtime-sized maps
+
+Some artifacts compile maps with `max_entries=0` and size them from
+userspace at load time (per-CPU arrays, ring buffers — Falco's `modern_bpf`
+probe is the canonical example). Declare those maps in the manifest so the
+validator mirrors what the real loader does before load:
+
+```yaml
+maps:
+  - name: auxiliary_maps
+    max_entries: cpus
+  - name: ringbuf_maps
+    max_entries: cpus
+    inner_ringbuf_bytes: 8388608
+```
+
+See [`docs/validator.md`](docs/validator.md) for details.
 
 ## Main Acceptance Flows
 
@@ -193,6 +232,20 @@ This repository includes a composite action that runs `bpfcompat` and appends
 the Markdown report to the GitHub Actions job summary. VM-backed validation
 requires a self-hosted Linux runner with KVM access (`/dev/kvm`).
 
+Suite mode (recommended — gates the whole collection):
+
+```yaml
+- uses: Kernel-Guard/bpfcompat@v0.1.3
+  with:
+    suite: suites/project.yaml
+    suite-out: reports/suite.json
+    suite-markdown: reports/suite.md
+```
+
+Suite cases can opt into `validation_mode: load_only`, `load_attach`, or
+`behavior`. Behavior mode runs manifest or suite smoke commands while BPF links
+are alive and adds the result to the suite-level collection matrix.
+
 Single artifact:
 
 ```yaml
@@ -206,20 +259,6 @@ Single artifact:
     validation-mode: load_attach
     timeout: 8m
 ```
-
-Suite mode:
-
-```yaml
-- uses: Kernel-Guard/bpfcompat@v0.1.3
-  with:
-    suite: suites/project.yaml
-    suite-out: reports/suite.json
-    suite-markdown: reports/suite.md
-```
-
-Suite cases can opt into `validation_mode: load_only`, `load_attach`, or
-`behavior`. Behavior mode runs manifest or suite smoke commands while BPF links
-are alive and adds the result to the suite-level collection matrix.
 
 Marketplace quick start:
 
@@ -254,6 +293,11 @@ without enabling host execution. Runtime execute remains separately gated by
 
 ## Runtime Decisioning
 
+> **Status:** experimental, and not the project's current focus. Active
+> development centers on the CI compatibility workflow: suites, kernel
+> matrices, and reports. This track is kept as a controlled proof and may
+> change or be removed.
+
 The runtime path is experimental and should be treated as a controlled proof:
 
 ```bash
@@ -279,16 +323,24 @@ Relevant docs:
 
 ## Documentation Map
 
+User guide — start here:
+
 - [`docs/architecture.md`](docs/architecture.md)
-- [`docs/acceptance-tests.md`](docs/acceptance-tests.md)
-- [`docs/project-compatibility-suite.md`](docs/project-compatibility-suite.md)
-- [`docs/falco-parity.md`](docs/falco-parity.md)
-- [`docs/backend-execution-proof.md`](docs/backend-execution-proof.md)
+- [`docs/project-compatibility-suite.md`](docs/project-compatibility-suite.md) — suites and collection matrices
+- [`docs/validator.md`](docs/validator.md) — what the in-guest validator checks
+- [`docs/profile-catalog.md`](docs/profile-catalog.md) — kernel/distro profiles and image maintenance
 - [`docs/upstream-kernel-virtme-ng.md`](docs/upstream-kernel-virtme-ng.md)
 - [`docs/firecracker-backend.md`](docs/firecracker-backend.md)
-- [`docs/profile-catalog.md`](docs/profile-catalog.md)
-- [`docs/validator.md`](docs/validator.md)
+- [`docs/api-web-ui.md`](docs/api-web-ui.md)
+
+Internal evidence and program docs (acceptance records, runbooks, and
+planning notes — useful for contributors, not needed to use the tool):
+
+- [`docs/acceptance-tests.md`](docs/acceptance-tests.md)
+- [`docs/falco-parity.md`](docs/falco-parity.md)
+- [`docs/backend-execution-proof.md`](docs/backend-execution-proof.md)
 - [`docs/external-ci-proof.md`](docs/external-ci-proof.md)
+- remaining `docs/*.md` proof, runbook, and checklist documents
 
 ## Development
 
