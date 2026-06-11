@@ -59,6 +59,10 @@ inputs:
     description: Build ./bin/bpfcompat with make before running tests.
     required: false
     default: "true"
+  prebuilt:
+    description: Use prebuilt release binaries when the action is pinned to a release tag ("auto"), or always build from source ("never"). Downloads are checksum-verified against the release SHA256SUMS.
+    required: false
+    default: "auto"
   binary:
     description: Path to bpfcompat binary. Relative paths are resolved from the caller repository root.
     required: false
@@ -67,8 +71,45 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Download prebuilt binaries
+      id: prebuilt
+      if: ${{ inputs.prebuilt != 'never' }}
+      shell: bash
+      env:
+        ACTION_REF: ${{ github.action_ref }}
+      run: |
+        set -euo pipefail
+        echo "resolved=false" >> "$GITHUB_OUTPUT"
+        ref="${ACTION_REF:-}"
+        if [[ ! "$ref" =~ ^v[0-9] ]]; then
+          echo "Action not pinned to a release tag (ref: ${ref:-none}); building from source."
+          exit 0
+        fi
+        if [[ "$(uname -m)" != "x86_64" ]]; then
+          echo "No prebuilt binaries for $(uname -m); building from source."
+          exit 0
+        fi
+
+        base="https://github.com/Kernel-Guard/bpfcompat/releases/download/${ref}"
+        tmp="$(mktemp -d)"
+        for asset in bpfcompat-linux-amd64 bpfcompat-validator-static-linux-amd64 SHA256SUMS; do
+          if ! curl -fsSL --retry 2 -o "$tmp/$asset" "$base/$asset"; then
+            echo "Release asset $asset not available for ${ref}; building from source."
+            exit 0
+          fi
+        done
+        # A failed verification is a hard error, not a fallback: assets exist
+        # but do not match what the release workflow published.
+        (cd "$tmp" && sha256sum -c SHA256SUMS)
+
+        mkdir -p "$GITHUB_ACTION_PATH/bin" "$GITHUB_ACTION_PATH/validator/c-libbpf/bin"
+        install -m 0755 "$tmp/bpfcompat-linux-amd64" "$GITHUB_ACTION_PATH/bin/bpfcompat"
+        install -m 0755 "$tmp/bpfcompat-validator-static-linux-amd64" "$GITHUB_ACTION_PATH/validator/c-libbpf/bin/bpfcompat-validator"
+        echo "resolved=true" >> "$GITHUB_OUTPUT"
+        echo "Using prebuilt release binaries for ${ref}."
+
     - name: Build bpfcompat
-      if: ${{ inputs.build == 'true' }}
+      if: ${{ inputs.build == 'true' && steps.prebuilt.outputs.resolved != 'true' }}
       shell: bash
       run: |
         set -euo pipefail

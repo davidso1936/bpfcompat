@@ -23,6 +23,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) once a
   `max_entries=0` (for example Falco's `modern_bpf`) can be validated
   as shipped. Per-fixup outcomes are recorded in the validator JSON and
   report notes.
+- `suites/example-collection.yaml`: a realistic collection (two exec-tracer
+  variants, two upstream OSS programs, one behavior case) against the MVP
+  matrix; the README now leads with the collection/suite workflow and splits
+  the documentation map into user guide vs internal evidence.
+- The GitHub Action downloads checksum-verified prebuilt binaries from the
+  release matching its pinned tag (new `prebuilt` input, default `auto`)
+  instead of compiling Go and the static validator on every CI run;
+  `release-artifacts.yml` builds and attaches `bpfcompat-linux-amd64`,
+  `bpfcompat-validator-static-linux-amd64`, and `SHA256SUMS` to tag releases.
 
 ### Changed
 - Packaged `bpfcompat-agent-load.service` now fails closed by default unless

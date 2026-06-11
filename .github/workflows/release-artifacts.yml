@@ -79,11 +79,20 @@ jobs:
             -X github.com/kernel-guard/bpfcompat/internal/version.Commit=${COMMIT} \
             -X github.com/kernel-guard/bpfcompat/internal/version.BuildDate=${BUILD_DATE}"
           go build -trimpath -ldflags "$LDFLAGS" -o dist/bpfcompat ./cmd/bpfcompat
+          cp dist/bpfcompat dist/bpfcompat-linux-amd64
+      - name: Build static validator
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libbpf-dev libelf-dev libzstd-dev zlib1g-dev
+          make validator-static
+          cp validator/c-libbpf/bin/bpfcompat-validator dist/bpfcompat-validator-static-linux-amd64
       - name: Compute checksums
         run: |
           set -euo pipefail
           cd dist
           sha256sum bpfcompat > bpfcompat.sha256
+          sha256sum bpfcompat-linux-amd64 bpfcompat-validator-static-linux-amd64 > SHA256SUMS
       - name: Generate SBOM (CycloneDX)
         uses: anchore/sbom-action@v0
         with:
@@ -98,6 +107,7 @@ jobs:
         run: |
           set -euo pipefail
           cosign sign-blob --yes dist/bpfcompat --output-signature dist/bpfcompat.sig --output-certificate dist/bpfcompat.crt
+          cosign sign-blob --yes dist/SHA256SUMS --output-signature dist/SHA256SUMS.sig --output-certificate dist/SHA256SUMS.crt
           cosign sign-blob --yes dist/bpfcompat.sbom.cdx.json --output-signature dist/bpfcompat.sbom.cdx.sig --output-certificate dist/bpfcompat.sbom.cdx.crt
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -106,9 +116,28 @@ jobs:
           path: |
             dist/bpfcompat
             dist/bpfcompat.sha256
+            dist/bpfcompat-linux-amd64
+            dist/bpfcompat-validator-static-linux-amd64
+            dist/SHA256SUMS
+            dist/SHA256SUMS.sig
+            dist/SHA256SUMS.crt
             dist/bpfcompat.sbom.cdx.json
             dist/bpfcompat.sig
             dist/bpfcompat.crt
             dist/bpfcompat.sbom.cdx.sig
             dist/bpfcompat.sbom.cdx.crt
           if-no-files-found: warn
+      - name: Attach release assets (tag releases only)
+        if: startsWith(github.ref, 'refs/tags/v')
+        # The action consumes these assets at run time to skip building from
+        # source: bpfcompat-linux-amd64, bpfcompat-validator-static-linux-amd64,
+        # and SHA256SUMS for verification.
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/bpfcompat-linux-amd64
+            dist/bpfcompat-validator-static-linux-amd64
+            dist/SHA256SUMS
+            dist/SHA256SUMS.sig
+            dist/SHA256SUMS.crt
+            dist/bpfcompat.sbom.cdx.json
