@@ -1,0 +1,64 @@
+name: kernel-freshness
+
+# Weekly freshness oracle for the image pipeline: compares the kernel each
+# profile last validated (vm/kernel-baselines.yaml) against the per-distro
+# kernel inventory published by falcosecurity/kernel-crawler. A red run means
+# at least one distro ships a kernel newer than the one our cached image
+# evidence covers — refresh the image and re-run the matrix, then update the
+# baselines with `bpfcompat kernel-freshness --update-from-report`.
+#
+# This is a non-blocking signal lane: nothing gates on it and it cannot
+# break merges. kernel-crawler refreshes its inventory weekly (Mondays), so
+# run shortly after.
+
+on:
+  schedule:
+    - cron: "23 14 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  freshness:
+    name: Baselines vs kernel-crawler
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25.11"
+          cache: true
+
+      - name: Build CLI
+        run: go build -o bin/bpfcompat ./cmd/bpfcompat
+
+      - name: Compare baselines against kernel-crawler
+        run: |
+          ./bin/bpfcompat kernel-freshness \
+            --baselines vm/kernel-baselines.yaml \
+            --markdown freshness.md \
+            --json freshness.json \
+            --fail-on-stale
+
+      - name: Publish summary
+        if: always()
+        run: |
+          if [[ -f freshness.md ]]; then
+            cat freshness.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload freshness report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kernel-freshness-${{ github.run_id }}
+          if-no-files-found: warn
+          path: |
+            freshness.md
+            freshness.json

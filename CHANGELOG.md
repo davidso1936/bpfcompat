@@ -7,6 +7,16 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) once a
 
 ## [Unreleased]
 
+### Added
+- `bpfcompat kernel-freshness`: compares the kernel release each VM profile
+  last validated (`vm/kernel-baselines.yaml`) against the per-distro kernel
+  inventory published weekly by falcosecurity/kernel-crawler, flagging
+  profiles whose matrix evidence is behind what the distro currently ships.
+  `--update-from-report` refreshes the baselines from a matrix report;
+  `--fail-on-stale` turns staleness into an exit-code signal. A scheduled
+  non-blocking workflow (`kernel-freshness.yml`) runs the comparison weekly
+  after kernel-crawler's own refresh. Suggested by Federico Di Pierro.
+
 ## [0.1.5] - 2026-06-11
 
 ### Fixed

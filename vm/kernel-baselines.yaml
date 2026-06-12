@@ -1,0 +1,227 @@
+# Last-validated guest kernel per VM profile, compared weekly against the
+# kernel inventory published by falcosecurity/kernel-crawler
+# (https://falcosecurity.github.io/kernel-crawler/). Refresh entries from a
+# matrix run with:
+#   bpfcompat kernel-freshness --update-from-report <report.json>
+# Entries without a crawler mapping are reported as uncovered, not stale.
+baselines:
+  - profile: almalinux-10-6.12
+    kernel: 6.12.0-124.56.5.el10_1.x86_64
+    recorded: "2026-05-19"
+    crawler:
+      distro: almalinux
+      target: almalinux
+      release_prefix: "6.12.0-"
+      release_contains: el10
+  - profile: almalinux-9-5.14
+    kernel: 5.14.0-611.54.6.el9_7.x86_64
+    recorded: "2026-05-19"
+    crawler:
+      distro: almalinux
+      target: almalinux
+      release_prefix: "5.14.0-"
+      release_contains: el9
+  - profile: amazon-linux-2-5.10
+    kernel: 5.10.247-246.989.amzn2.x86_64
+    recorded: "2026-05-19"
+    crawler:
+      distro: amazonlinux2
+      target: amazonlinux2
+      release_prefix: "5.10."
+  - profile: amazon-linux-2023-6.1
+    kernel: 6.1.170-213.321.amzn2023.x86_64
+    recorded: "2026-05-19"
+    crawler:
+      distro: amazonlinux2023
+      target: amazonlinux2023
+      release_prefix: "6.1."
+  - profile: centos-stream-10-6.12
+    kernel: 6.12.0-226.el10.x86_64
+    recorded: "2026-05-19"
+    crawler:
+      distro: centos
+      target: centos
+      release_prefix: "6.12.0-"
+      release_contains: el10
+  - profile: centos-stream-9-5.14
+    kernel: 5.14.0-706.el9.x86_64
+    recorded: "2026-05-19"
+    crawler:
+      distro: centos
+      target: centos
+      release_prefix: "5.14.0-"
+      release_contains: el9
+  - profile: debian-11-5.10
+    kernel: 5.10.0-42-cloud-amd64
+    recorded: "2026-05-22"
+    note: kernel-crawler does not publish debian entries
+  - profile: debian-12-6.1
+    kernel: 6.1.0-47-cloud-amd64
+    recorded: "2026-06-11"
+    note: kernel-crawler does not publish debian entries
+  - profile: debian-13-6.12
+    kernel: 6.12.86+deb13-cloud-amd64
+    recorded: "2026-05-22"
+    note: kernel-crawler does not publish debian entries
+  - profile: opensuse-leap-15.6-6.4
+    kernel: 6.4.0-150600.23.100-default
+    recorded: "2026-05-19"
+    crawler:
+      distro: opensuse
+      target: opensuse
+      release_prefix: "6.4.0-150600."
+  - profile: oracle-linux-10-uek8-6.12
+    kernel: 6.12.0-107.59.3.3.el10uek.x86_64
+    recorded: "2026-05-19"
+    crawler:
+      distro: ol
+      target: ol
+      release_prefix: "6.12.0-"
+      release_contains: el10uek
+  - profile: oracle-linux-9-uek7-5.15
+    kernel: 6.12.0-107.59.3.3.el9uek.x86_64
+    recorded: "2026-05-19"
+    note: image now boots UEK8 (6.12) despite the profile name
+    crawler:
+      distro: ol
+      target: ol
+      release_prefix: "6.12.0-"
+      release_contains: el9uek
+  - profile: rhel-8-4.18
+    kernel: 5.15.0-206.153.7.1.el8uek.x86_64
+    recorded: "2026-05-19"
+    note: image boots UEK7 on the EL8 userspace
+    crawler:
+      distro: ol
+      target: ol
+      release_prefix: "5.15.0-"
+      release_contains: el8uek
+  - profile: rocky-10-6.12
+    kernel: 6.12.0-124.8.1.el10_1.x86_64
+    recorded: "2026-05-19"
+    crawler:
+      distro: rocky
+      target: rocky
+      release_prefix: "6.12.0-"
+      release_contains: el10
+  - profile: rocky-9-5.14
+    kernel: 5.14.0-611.5.1.el9_7.x86_64
+    recorded: "2026-05-19"
+    crawler:
+      distro: rocky
+      target: rocky
+      release_prefix: "5.14.0-"
+      release_contains: el9
+  - profile: sles-15.6-6.4
+    kernel: 6.4.0-150600.23.100-default
+    recorded: "2026-05-19"
+    note: tracked via openSUSE Leap 15.6 (shared SLE kernel series)
+    crawler:
+      distro: opensuse
+      target: opensuse
+      release_prefix: "6.4.0-150600."
+  - profile: ubuntu-16.04-4.4
+    kernel: 4.4.0-210-generic
+    recorded: "2026-05-19"
+    crawler:
+      distro: ubuntu
+      target: ubuntu-generic
+      release_prefix: "4.4.0-"
+  - profile: ubuntu-18.04-4.15
+    kernel: 4.15.0-212-generic
+    recorded: "2026-05-22"
+    crawler:
+      distro: ubuntu
+      target: ubuntu-generic
+      release_prefix: "4.15.0-"
+  - profile: ubuntu-20.04-5.4
+    kernel: 5.4.0-216-generic
+    recorded: "2026-06-11"
+    crawler:
+      distro: ubuntu
+      target: ubuntu-generic
+      release_prefix: "5.4.0-"
+  - profile: ubuntu-20.04-minimal-5.4
+    kernel: 5.4.0-1133-kvm
+    recorded: "2026-05-19"
+    crawler:
+      distro: ubuntu
+      target: ubuntu-kvm
+      release_prefix: "5.4.0-"
+  - profile: ubuntu-20.10-5.8
+    kernel: 5.8.0-63-generic
+    recorded: "2026-05-19"
+    crawler:
+      distro: ubuntu
+      target: ubuntu-generic
+      release_prefix: "5.8.0-"
+  - profile: ubuntu-22.04-5.15
+    kernel: 5.15.0-173-generic
+    recorded: "2026-06-11"
+    crawler:
+      distro: ubuntu
+      target: ubuntu-generic
+      release_prefix: "5.15.0-"
+  - profile: ubuntu-22.04-5.15-lockdown
+    kernel: 5.15.0-173-generic
+    recorded: "2026-05-19"
+    crawler:
+      distro: ubuntu
+      target: ubuntu-generic
+      release_prefix: "5.15.0-"
+  - profile: ubuntu-22.04-minimal-5.15
+    kernel: 5.15.0-1098-kvm
+    recorded: "2026-05-22"
+    crawler:
+      distro: ubuntu
+      target: ubuntu-kvm
+      release_prefix: "5.15.0-"
+  - profile: ubuntu-23.10-6.5
+    kernel: 6.5.0-44-generic
+    recorded: "2026-06-11"
+    crawler:
+      distro: ubuntu
+      target: ubuntu-generic
+      release_prefix: "6.5.0-"
+  - profile: ubuntu-24.04-6.8
+    kernel: 6.8.0-106-generic
+    recorded: "2026-06-11"
+    crawler:
+      distro: ubuntu
+      target: ubuntu-generic
+      release_prefix: "6.8.0-"
+  - profile: ubuntu-24.04-minimal-6.8
+    kernel: 6.8.0-110-generic
+    recorded: "2026-05-19"
+    crawler:
+      distro: ubuntu
+      target: ubuntu-generic
+      release_prefix: "6.8.0-"
+  - profile: ubuntu-24.10-6.11
+    kernel: 6.11.0-29-generic
+    recorded: "2026-06-03"
+    crawler:
+      distro: ubuntu
+      target: ubuntu-generic
+      release_prefix: "6.11.0-"
+  - profile: ubuntu-25.04-6.14
+    kernel: 6.14.0-37-generic
+    recorded: "2026-06-03"
+    crawler:
+      distro: ubuntu
+      target: ubuntu-generic
+      release_prefix: "6.14.0-"
+  - profile: ubuntu-25.10-6.17
+    kernel: 6.17.0-22-generic
+    recorded: "2026-06-03"
+    crawler:
+      distro: ubuntu
+      target: ubuntu-generic
+      release_prefix: "6.17.0-"
+  - profile: ubuntu-25.10-minimal-6.17
+    kernel: 6.17.0-23-generic
+    recorded: "2026-05-19"
+    crawler:
+      distro: ubuntu
+      target: ubuntu-generic
+      release_prefix: "6.17.0-"

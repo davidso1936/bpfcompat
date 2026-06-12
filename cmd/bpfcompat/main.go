@@ -55,6 +55,8 @@ func run(args []string) int {
 		return runAdmin(args[1:])
 	case "report-summary":
 		return runReportSummary(args[1:])
+	case "kernel-freshness":
+		return runKernelFreshness(args[1:])
 	case "version", "--version":
 		return runVersion(args[1:])
 	case "env":
@@ -1370,6 +1372,7 @@ func printRootUsage() {
 	fmt.Println("  bpfcompat admin audit-export  [--workdir DIR] [--tenant T] [--project P] [--limit N] [--out FILE] [--sign-key FILE --sig-out FILE]")
 	fmt.Println("  bpfcompat admin audit-verify  --input FILE --sig FILE --pubkey FILE")
 	fmt.Println("  bpfcompat report-summary --report <file>")
+	fmt.Println("  bpfcompat kernel-freshness [--baselines <file>] [--fail-on-stale] [--update-from-report <file>]")
 	fmt.Println("  bpfcompat version [--json]")
 	fmt.Println("  bpfcompat env [--markdown|--json]")
 }

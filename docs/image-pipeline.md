@@ -90,6 +90,42 @@ make manual-image-check
 - `go test ./internal/vm -run TestAllProfileYAMLLoadAndValidate` —
   validates profile YAML integrity.
 
+## Kernel freshness vs kernel-crawler
+
+A cached image keeps producing matrix evidence for the kernel it shipped
+with, even after the distro has moved on. The freshness oracle makes that
+drift visible by comparing each profile's last-validated kernel release
+against the per-distro kernel inventory that
+[falcosecurity/kernel-crawler](https://github.com/falcosecurity/kernel-crawler)
+publishes weekly ([per-arch `list.json`](https://falcosecurity.github.io/kernel-crawler/)):
+
+```bash
+./bin/bpfcompat kernel-freshness                 # download inventory, print table
+./bin/bpfcompat kernel-freshness --fail-on-stale # exit 2 when evidence is behind
+```
+
+- `vm/kernel-baselines.yaml` (committed) records the last-validated kernel
+  per profile plus its crawler mapping: distro key, target flavor
+  (`ubuntu-generic` vs `ubuntu-kvm`), a `release_prefix` pinning the series,
+  and an optional `release_contains` for distros that mix major releases
+  under one key (`el9` vs `el10`).
+- After a matrix run, refresh the baselines from the report:
+  `bpfcompat kernel-freshness --update-from-report reports/<run>.json`.
+  Profiles the file doesn't know yet are appended without a mapping and
+  show up as `uncovered` until one is added.
+- `.github/workflows/kernel-freshness.yml` runs the comparison weekly
+  (after kernel-crawler's own Monday refresh) as a non-blocking signal
+  lane: a red run means "refresh the image, re-run the matrix, update the
+  baselines", never a blocked merge.
+- Statuses are honest about coverage limits: `uncovered` (kernel-crawler
+  publishes no Debian entries, for example), `no-entries` (EOL series the
+  archive dropped), and `no-kernel` (profile never validated) are reported
+  distinctly from `stale`.
+
+The crawler indexes header packages, not bootable images, so it serves as
+a freshness oracle only — the boot substrate stays unmodified vendor cloud
+images.
+
 ## Generated lanes (no prebuilt image at all)
 
 Two lanes construct their environment at run time instead of downloading a
@@ -132,17 +168,10 @@ non-default examples.
   pinning everything to release-versioned URLs needs a refresh routine
   (candidate: extend `profile-catalog-maintenance.yml` to propose pin
   bumps as PRs).
-- No kernel-freshness signal: a matrix records which kernel release each
-  image booted, but nothing compares that against what the distro currently
-  ships. [falcosecurity/kernel-crawler](https://github.com/falcosecurity/kernel-crawler)
-  publishes a weekly per-distro inventory of kernel releases
-  ([JSON](https://falcosecurity.github.io/kernel-crawler/)); a scheduled
-  check could diff each profile's last-validated `kernelrelease` against the
-  newest matching `target` entry (e.g. `ubuntu-generic`/`ubuntu-hwe`) and
-  flag profiles whose images have fallen behind. The crawler indexes header
-  packages, not bootable images, so it is a freshness oracle for this
-  pipeline rather than an image source — the boot substrate stays vendor
-  cloud images.
+- The freshness oracle flags profiles whose evidence is behind, but
+  refreshing is still manual (re-download image, re-run matrix,
+  `--update-from-report`). A follow-up could automate that as a proposed
+  PR.
 - Some cataloged profiles (Talos, Bottlerocket, Flatcar, Amazon Linux 2
   with 4.14) are not runnable on the current SSH/cloud-init executor and
   are marked non-blocking in matrices.
