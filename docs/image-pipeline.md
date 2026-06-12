@@ -132,6 +132,17 @@ non-default examples.
   pinning everything to release-versioned URLs needs a refresh routine
   (candidate: extend `profile-catalog-maintenance.yml` to propose pin
   bumps as PRs).
+- No kernel-freshness signal: a matrix records which kernel release each
+  image booted, but nothing compares that against what the distro currently
+  ships. [falcosecurity/kernel-crawler](https://github.com/falcosecurity/kernel-crawler)
+  publishes a weekly per-distro inventory of kernel releases
+  ([JSON](https://falcosecurity.github.io/kernel-crawler/)); a scheduled
+  check could diff each profile's last-validated `kernelrelease` against the
+  newest matching `target` entry (e.g. `ubuntu-generic`/`ubuntu-hwe`) and
+  flag profiles whose images have fallen behind. The crawler indexes header
+  packages, not bootable images, so it is a freshness oracle for this
+  pipeline rather than an image source — the boot substrate stays vendor
+  cloud images.
 - Some cataloged profiles (Talos, Bottlerocket, Flatcar, Amazon Linux 2
   with 4.14) are not runnable on the current SSH/cloud-init executor and
   are marked non-blocking in matrices.
