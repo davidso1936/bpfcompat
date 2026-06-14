@@ -1,5 +1,10 @@
 # bpfcompat
 
+[![CI](https://github.com/Kernel-Guard/bpfcompat/actions/workflows/ci.yml/badge.svg)](https://github.com/Kernel-Guard/bpfcompat/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/Kernel-Guard/bpfcompat/actions/workflows/codeql.yml/badge.svg)](https://github.com/Kernel-Guard/bpfcompat/actions/workflows/codeql.yml)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/Kernel-Guard/bpfcompat/badge)](https://scorecard.dev/viewer/?uri=github.com/Kernel-Guard/bpfcompat)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+
 `bpfcompat` is an open-source compatibility validator for compiled eBPF
 artifacts. It runs real libbpf load/attach checks against Linux kernel profiles
 and produces JSON/Markdown reports that can fail CI when an artifact regresses.
@@ -402,6 +407,7 @@ planning notes — useful for contributors, not needed to use the tool):
 
 - [`docs/acceptance-tests.md`](docs/acceptance-tests.md)
 - [`docs/falco-parity.md`](docs/falco-parity.md)
+- [`docs/supply-chain.md`](docs/supply-chain.md) — supply-chain controls and maintainer repo settings
 - [`docs/backend-execution-proof.md`](docs/backend-execution-proof.md)
 - [`docs/external-ci-proof.md`](docs/external-ci-proof.md)
 - remaining `docs/*.md` proof, runbook, and checklist documents
@@ -430,6 +436,30 @@ Operator guidance:
 - require write auth or explicit anonymous-demo flags for POST paths;
 - do not enable internal-host or `file://` fetches outside controlled tests;
 - run host-loading flows only through a local policy-gated agent path.
+
+### Supply-chain posture
+
+- **Static analysis:** GitHub CodeQL (`codeql.yml`) plus `govulncheck` and
+  `golangci-lint` in CI on every PR.
+- **Dependency updates:** Dependabot (`dependabot.yml`) for Go modules and
+  pinned GitHub Actions, grouped weekly.
+- **Risk scoring:** OpenSSF Scorecard (`scorecard.yml`), published to the
+  public Scorecard API (badge above).
+- **Signed releases:** tag builds produce a CycloneDX SBOM and cosign keyless
+  (Sigstore OIDC) signatures over the binaries, `SHA256SUMS`, and SBOM
+  (`release-artifacts.yml`). Verify with:
+
+  ```bash
+  cosign verify-blob \
+    --certificate SHA256SUMS.crt --signature SHA256SUMS.sig \
+    --certificate-identity-regexp 'https://github.com/Kernel-Guard/bpfcompat/.*' \
+    --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+    SHA256SUMS
+  ```
+
+Maintainer-side repo settings (branch protection, secret-scanning push
+protection, OpenSSF Best Practices registration) are tracked in
+[`docs/supply-chain.md`](docs/supply-chain.md).
 
 ## License
 

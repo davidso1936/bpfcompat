@@ -8,6 +8,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) once a
 ## [Unreleased]
 
 ### Added
+- Supply-chain trust signals: GitHub CodeQL static analysis
+  (`.github/workflows/codeql.yml`), OpenSSF Scorecard
+  (`.github/workflows/scorecard.yml`), and Dependabot
+  (`.github/dependabot.yml`, Go modules + pinned actions). README gains CI,
+  CodeQL, Scorecard, and license badges; `docs/supply-chain.md` documents the
+  controls and the maintainer-side repo settings (branch protection, secret
+  scanning, OpenSSF Best Practices registration). SBOM + cosign keyless signing
+  already shipped in `release-artifacts.yml`.
 - Zero-infrastructure CI on-ramp: `.github/workflows/bpfcompat-example-hosted.yml`
   runs the full QEMU VM compatibility gate on a stock GitHub-hosted
   `ubuntu-latest` runner. GitHub-hosted Linux runners now expose `/dev/kvm`, so
