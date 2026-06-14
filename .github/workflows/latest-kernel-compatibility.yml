@@ -40,7 +40,7 @@ jobs:
       VM_CONCURRENCY: ${{ github.event.inputs.concurrency || '2' }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Verify KVM availability
         shell: bash
@@ -93,7 +93,7 @@ jobs:
 
       - name: Upload latest-kernel evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: bpfcompat-latest-kernel-${{ github.run_id }}
           if-no-files-found: warn

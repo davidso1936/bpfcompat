@@ -42,7 +42,7 @@ jobs:
     timeout-minutes: 75
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Verify runner virtualization
         shell: bash
@@ -79,7 +79,7 @@ jobs:
 
       - name: Upload multiarch evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: bpfcompat-${{ matrix.arch }}-${{ github.run_id }}
           if-no-files-found: warn
