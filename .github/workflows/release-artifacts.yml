@@ -42,10 +42,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: true
@@ -110,7 +110,7 @@ jobs:
           cosign sign-blob --yes dist/SHA256SUMS --output-signature dist/SHA256SUMS.sig --output-certificate dist/SHA256SUMS.crt
           cosign sign-blob --yes dist/bpfcompat.sbom.cdx.json --output-signature dist/bpfcompat.sbom.cdx.sig --output-certificate dist/bpfcompat.sbom.cdx.crt
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: bpfcompat-release-${{ steps.meta.outputs.version }}
           path: |
@@ -132,7 +132,7 @@ jobs:
         # The action consumes these assets at run time to skip building from
         # source: bpfcompat-linux-amd64, bpfcompat-validator-static-linux-amd64,
         # and SHA256SUMS for verification.
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: |
             dist/bpfcompat-linux-amd64

@@ -27,7 +27,7 @@ jobs:
     timeout-minutes: 60
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Verify KVM availability
         shell: bash
@@ -75,7 +75,7 @@ jobs:
 
       - name: Upload compatibility evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: bpfcompat-compatibility-matrix-${{ github.run_id }}
           if-no-files-found: warn
@@ -113,14 +113,14 @@ jobs:
 
       - name: Configure Pages
         if: github.event_name == 'workflow_dispatch' && inputs.deploy_pages == 'true'
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@v6
 
       - name: Upload Pages artifact
         if: github.event_name == 'workflow_dispatch' && inputs.deploy_pages == 'true'
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: public/compatibility
 
       - name: Deploy Pages
         if: github.event_name == 'workflow_dispatch' && inputs.deploy_pages == 'true'
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
