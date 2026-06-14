@@ -1,5 +1,10 @@
 # bpfcompat
 
+[![CI](https://github.com/Kernel-Guard/bpfcompat/actions/workflows/ci.yml/badge.svg)](https://github.com/Kernel-Guard/bpfcompat/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/Kernel-Guard/bpfcompat/actions/workflows/codeql.yml/badge.svg)](https://github.com/Kernel-Guard/bpfcompat/actions/workflows/codeql.yml)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/Kernel-Guard/bpfcompat/badge)](https://scorecard.dev/viewer/?uri=github.com/Kernel-Guard/bpfcompat)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+
 `bpfcompat` is an open-source compatibility validator for compiled eBPF
 artifacts. It runs real libbpf load/attach checks against Linux kernel profiles
 and produces JSON/Markdown reports that can fail CI when an artifact regresses.
@@ -8,6 +13,47 @@ The core question is simple:
 
 > Will this `.bpf.o` load and attach on the kernels I care about, and if not,
 > what failed?
+
+## Why not just rely on CO-RE / BTFHub?
+
+CO-RE makes a `.bpf.o` *portable in principle*; it does not guarantee it will
+*load* on a given kernel. Real-world failures that CO-RE does not prevent:
+
+- missing or partial kernel BTF,
+- CO-RE relocation errors against a divergent kernel,
+- unsupported map types (e.g. ringbuf before 5.8),
+- unsupported program/attach types,
+- capability and kernel-config differences.
+
+`bpfcompat` answers the empirical question CO-RE leaves open: *does it actually
+load and attach here?* — by running the artifact in a real kernel.
+
+## Try it in CI — no self-hosted runner
+
+GitHub-hosted Linux runners now expose `/dev/kvm`, so the full QEMU VM
+compatibility gate runs on a stock `ubuntu-latest` runner. No KVM box of your
+own, no self-hosted runner. See
+[`.github/workflows/bpfcompat-example-hosted.yml`](.github/workflows/bpfcompat-example-hosted.yml)
+for a copy-paste workflow; if a runner ever lacks KVM, validation degrades to
+TCG software emulation (correct, just slower) instead of failing.
+
+## Proof: a real Falco probe catches a real regression
+
+`bpfcompat` validates Falco's `modern_bpf` probe (`bpf_probe.o`, ~64 programs)
+exactly as Falco's own loader runs it, across a 5-kernel matrix:
+
+| Profile | Host kernel | Status | Why |
+|---|---|---|---|
+| `ubuntu-20.04-5.4` | `5.4.0-216` | ❌ fail | `UNSUPPORTED_MAP_TYPE` — ringbuf needs ≥ 5.8 |
+| `ubuntu-22.04-5.15` | `5.15.0-173` | ✅ pass | loads; selects `*_old_x` syscall variants |
+| `debian-12-6.1` | `6.1.0-47` | ✅ pass | loads; full variant set |
+| `ubuntu-23.10-6.5` | `6.5.0-44` | ✅ pass | loads; full variant set |
+| `ubuntu-24.04-6.8` | `6.8.0-106` | ✅ pass | loads; full variant set |
+
+The red `5.4` row is the point: a kernel below Falco's real floor is flagged
+*before* shipping, with the exact mechanism (`ringbuf_maps` create returns
+`-EINVAL`) and remediation — not a generic "it broke." Reproduce this matrix
+locally; see [`docs/falco-parity.md`](docs/falco-parity.md).
 
 ## Current Status
 
@@ -51,9 +97,11 @@ does not remove them from git history.
 
 ## Prerequisites
 
-For the main QEMU/KVM path:
+For the main QEMU path:
 
-- Linux host with `/dev/kvm`
+- Linux host (a GitHub-hosted `ubuntu-latest` runner works; `/dev/kvm`
+  enables hardware acceleration, and bpfcompat falls back to TCG software
+  emulation when it is absent)
 - Go 1.22+
 - `make`
 - `clang`
@@ -247,7 +295,10 @@ native ARM64 KVM runner.
 
 This repository includes a composite action that runs `bpfcompat` and appends
 the Markdown report to the GitHub Actions job summary. VM-backed validation
-requires a self-hosted Linux runner with KVM access (`/dev/kvm`).
+runs on a stock GitHub-hosted `ubuntu-latest` runner (which now exposes
+`/dev/kvm`); a self-hosted KVM runner is only needed for wide matrices, ARM64,
+or the Firecracker lane. See
+[`.github/workflows/bpfcompat-example-hosted.yml`](.github/workflows/bpfcompat-example-hosted.yml).
 
 Suite mode (recommended — gates the whole collection):
 
@@ -356,6 +407,7 @@ planning notes — useful for contributors, not needed to use the tool):
 
 - [`docs/acceptance-tests.md`](docs/acceptance-tests.md)
 - [`docs/falco-parity.md`](docs/falco-parity.md)
+- [`docs/supply-chain.md`](docs/supply-chain.md) — supply-chain controls and maintainer repo settings
 - [`docs/backend-execution-proof.md`](docs/backend-execution-proof.md)
 - [`docs/external-ci-proof.md`](docs/external-ci-proof.md)
 - remaining `docs/*.md` proof, runbook, and checklist documents
@@ -384,6 +436,30 @@ Operator guidance:
 - require write auth or explicit anonymous-demo flags for POST paths;
 - do not enable internal-host or `file://` fetches outside controlled tests;
 - run host-loading flows only through a local policy-gated agent path.
+
+### Supply-chain posture
+
+- **Static analysis:** GitHub CodeQL (`codeql.yml`) plus `govulncheck` and
+  `golangci-lint` in CI on every PR.
+- **Dependency updates:** Dependabot (`dependabot.yml`) for Go modules and
+  pinned GitHub Actions, grouped weekly.
+- **Risk scoring:** OpenSSF Scorecard (`scorecard.yml`), published to the
+  public Scorecard API (badge above).
+- **Signed releases:** tag builds produce a CycloneDX SBOM and cosign keyless
+  (Sigstore OIDC) signatures over the binaries, `SHA256SUMS`, and SBOM
+  (`release-artifacts.yml`). Verify with:
+
+  ```bash
+  cosign verify-blob \
+    --certificate SHA256SUMS.crt --signature SHA256SUMS.sig \
+    --certificate-identity-regexp 'https://github.com/Kernel-Guard/bpfcompat/.*' \
+    --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+    SHA256SUMS
+  ```
+
+Maintainer-side repo settings (branch protection, secret-scanning push
+protection, OpenSSF Best Practices registration) are tracked in
+[`docs/supply-chain.md`](docs/supply-chain.md).
 
 ## License
 
