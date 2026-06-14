@@ -32,16 +32,21 @@ sha256sum -c SHA256SUMS
 
 These are not files in the repo. Track their status here.
 
-- [ ] **Branch protection on `main`**: require PRs, require status checks
-      (`ci`, `codeql`), require up-to-date branches, restrict force-pushes.
-      Settings → Branches → Add rule, or:
-      `gh api -X PUT repos/Kernel-Guard/bpfcompat/branches/main/protection ...`
-- [ ] **Secret scanning + push protection**: Settings → Code security → enable
-      "Secret scanning" and "Push protection".
-- [ ] **Dependabot alerts + security updates**: Settings → Code security →
-      enable "Dependabot alerts" and "Dependabot security updates".
+- [x] **Branch protection on `main`** (wired 2026-06-14): blocks force-pushes
+      and deletions, requires conversation resolution, and requires the CI
+      checks `Test (-race)`, `golangci-lint`, `govulncheck`, `Build (Go side)`.
+      `enforce_admins` is off (solo-maintainer bypass) and no review count is
+      required. Add `Analyze (Go)` to the required contexts once `codeql.yml`
+      is on `main`. Set via:
+      `gh api -X PUT repos/Kernel-Guard/bpfcompat/branches/main/protection --input -`
+- [x] **Secret scanning + push protection** (wired 2026-06-14): enabled via
+      `gh api -X PATCH repos/Kernel-Guard/bpfcompat` with
+      `security_and_analysis.secret_scanning` + `secret_scanning_push_protection`.
+- [x] **Dependabot alerts + security updates** (wired 2026-06-14): enabled via
+      `gh api -X PUT .../vulnerability-alerts` and `.../automated-security-fixes`.
 - [ ] **Code scanning default setup OFF if CodeQL workflow is used** (avoid
-      double analysis): Settings → Code security → Code scanning.
+      double analysis): Settings → Code security → Code scanning. Do this after
+      `codeql.yml` lands on `main`.
 - [ ] **OpenSSF Best Practices badge**: register the project at
       <https://www.bestpractices.dev/>, then add the returned badge:
       `[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/<ID>/badge)](https://www.bestpractices.dev/projects/<ID>)`
