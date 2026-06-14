@@ -30,17 +30,18 @@ load and attach here?* — by running the artifact in a real kernel.
 
 ## Try it in CI without your own KVM box
 
-GitHub-hosted Linux runners now expose `/dev/kvm`, so the QEMU VM lane can run
-on a stock `ubuntu-latest` runner instead of requiring a self-hosted KVM
-machine. See
+GitHub-hosted Linux runners now expose `/dev/kvm`, so the full QEMU VM
+compatibility gate runs on a stock `ubuntu-latest` runner — no self-hosted KVM
+machine required. This is proven end-to-end:
 [`.github/workflows/bpfcompat-example-hosted.yml`](.github/workflows/bpfcompat-example-hosted.yml)
-for a copy-paste workflow; if a runner lacks KVM, validation degrades to TCG
-software emulation (correct, just slower) instead of failing.
+boots a disposable VM and runs the `dev-functional` suite (load + behavioral
+execve) in **under two minutes**.
 
-> **Status:** the hosted-runner lane is wired and KVM is confirmed available on
-> `ubuntu-latest`, but end-to-end guest boot on hosted runners is still being
-> stabilized (tracking a cloud-init/SSH-readiness timeout). Self-hosted KVM
-> remains the validated path today; see issue tracker for hosted-runner status.
+One gotcha: some hosted images expose `/dev/kvm` but the runner user isn't in
+the `kvm` group, so QEMU can't open it. The example workflow runs
+`sudo chmod 0666 /dev/kvm` to handle that. If a runner genuinely lacks KVM,
+validation degrades to TCG software emulation (correct, just slower) instead of
+failing.
 
 ## Proof: a real Falco probe catches a real regression
 
